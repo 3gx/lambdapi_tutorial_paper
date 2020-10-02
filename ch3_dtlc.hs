@@ -1,6 +1,8 @@
 import Control.Monad (unless)
 
-data TermI = Ann TermC Type
+data TermI = Ann TermC TermC
+           | Star
+           | Pi TermC TermC
            | Bound Int
            | Free Name
            | TermI :@: TermC
@@ -15,23 +17,32 @@ data Name = Global String
           | Quote Int
        deriving (Show, Eq)
 
-data Type = TFree Name
-          | Fun Type Type
-       deriving (Show, Eq)
-
 data Value = VLam (Value -> Value)
+           | VStar
+           | VPi Value (Value -> Value)
            | VNeutral Neutral
+
+instance Show Value where
+  show x = show (quote0 x)
 
 data Neutral = NFree Name
              | NApp Neutral Value
+        deriving Show
+
+
+type Type = Value
 
 vfree :: Name -> Value
 vfree n = VNeutral (NFree n)
 
 type Env = [Value]
+type Context = [(Name,Type)]
 
 evalI :: TermI -> Env -> Value
+
 evalI (Ann e _) d = evalC e d
+evalI Star d = VStar
+evalI (Pi t t') d = VPi (evalC t d) (\x -> evalC t' (x : d))
 evalI (Free x)  d = vfree x
 evalI (Bound i) d = d !! i
 evalI (e :@: e') d = vapp (evalI e d) (evalC e' d)
@@ -44,63 +55,64 @@ evalC :: TermC -> Env -> Value
 evalC (Inf i) d = evalI i d
 evalC (Lam e) d = VLam (\x -> evalC e (x:d))
 
-data Kind = Star
-        deriving (Show)
-
-data Info = HasKind Kind
-          | HasType Type
-       deriving (Show)
-
-type Context =[(Name, Info)]
 
 type Result a = Either String a
 
 throwError :: String -> Result a
 throwError str = Left str
 
-kindC :: Context -> Type -> Kind -> Result ()
-kindC context (TFree x) Star
-  = case lookup x context of
-      Just (HasKind start) -> return ()
-      Nothing              -> throwError "unknown var identifier"
-
-kindC context (Fun k k') Star
-  = do kindC context k Star
-       kindC context k' Star
 
 typeI0 :: Context -> TermI -> Result Type
 typeI0 = typeI 0
 
+
 typeI :: Int -> Context -> TermI -> Result Type
-typeI i context (Ann e t)
-  = do kindC context t Star
+
+typeI i context (Ann e p)
+  = do typeC i context p VStar
+       let t = evalC p []
        typeC i context e t
        return t
+
+typeI i context Star
+  = return VStar
+
+typeI i context (Pi p p')
+  = do typeC i context p VStar
+       let t = evalC p []
+       typeC (i+1) ((Local i, t) : context)
+             (substC 0 (Free (Local i)) p') VStar
+       return VStar
+
 typeI i context (Free x)
   = case lookup x context of
-       Just (HasType t) -> return t
-       Nothing          -> throwError "unknown type identifier"
+       Just t -> return t
+       Nothing -> throwError "unknown type identifier"
 
 typeI i context (e :@: e')
   = do s <- typeI i context e
        case s of
-          Fun t t' -> do typeC i context e' t
-                         return t'
+          VPi t t' -> do typeC i context e' t
+                         return (t' (evalC e' []))
           _ -> throwError "illegal application"
 
-typeC :: Int -> Context -> TermC -> Type -> Result ()
-typeC i context (Inf e) t
-  = do t' <- typeI i context e
-       unless (t == t') (throwError "type mismatch")
 
-typeC i context (Lam e) (Fun t t')
-  = typeC (i+1) ((Local i, HasType t) : context)
-                (substC 0 (Free (Local i)) e) t'
+typeC :: Int -> Context -> TermC -> Type -> Result ()
+
+typeC i context (Inf e) v
+  = do v' <- typeI i context e
+       unless (quote0 v == quote0 v') (throwError "type mismatch")
+
+typeC i context (Lam e) (VPi t t')
+  = typeC (i+1) ((Local i, t) : context)
+                (substC 0 (Free (Local i)) e) (t' (vfree (Local i)))
 typeC i context _ _
   = throwError "type mismatch"
 
 substI :: Int -> TermI -> TermI -> TermI
 substI i r (Ann e t) = Ann (substC i r e) t
+substI i r Star = Star
+substI i r (Pi t t') = Pi (substC i r t) (substC (i+1) r t')
 substI i r (Bound j) = if i==j then r else Bound j
 substI i r (Free y) = Free y
 substI i r (e :@: e') = substI i r e :@: substC i r e'
@@ -114,6 +126,9 @@ quote0 = quote 0
 
 quote :: Int -> Value -> TermC
 quote i (VLam f) = Lam (quote (i+1) (f (vfree (Quote i))))
+quote i VStar = Inf Star
+quote i (VPi v f)
+  = Inf (Pi (quote i v) (quote (i+1) (f (vfree (Quote i)))))
 quote i (VNeutral n) = Inf (neutralQuote i n)
 
 neutralQuote :: Int -> Neutral -> TermI
@@ -132,16 +147,20 @@ e0 = quote0 (VLam (\x -> VLam (\y -> x)))
 
 id' = Lam (Inf (Bound 0))
 const' = Lam (Lam (Inf (Bound 1)))
-tfree a = TFree (Global a)
+tfree a = Inf (Free (Global a))
 free x = Inf (Free (Global x))
-term1 = Ann id' (Fun (tfree "a") (tfree "a")) :@: free "y"
-term2 = Ann const' (Fun (Fun  (tfree "b") (tfree "b"))
-                   (Fun (tfree "a")
-                        (Fun (tfree "b") (tfree "b"))))
+term1 = Ann id' (Inf (Pi (tfree "a") (tfree "a"))) :@: free "y"
+term2 = Ann const' (Inf (Pi (Inf (Pi  (tfree "b") (tfree "b")))
+                   (Inf (Pi (tfree "a")
+                        (Inf (Pi (tfree "b") (tfree "b")))))))
         :@: id' :@: free "y"
-env1 = [(Global "y", HasType (tfree "a")),
-        (Global "a", HasKind Star)]
-env2 = [(Global "b", HasKind Star)] ++ env1
+env1 = [(Global "y", VNeutral (NFree (Global "a"))),
+        (Global "a", VStar)]
+env2 = [(Global "b", VStar)] ++ env1
+
+--quoteT :: Result Type -> Result Value
+--quoteT (Right x) = return (evalI x [])
+--quoteT (Left x) = Left x
 
 e1 = quote0 (evalI term1 [])
 -- > e1
@@ -153,11 +172,9 @@ e2 = quote0 (evalI term2 [])
 
 e3 = typeI0 env1 term1
 -- > e3
--- > Right (TFree (Global "a"))
+-- > Right Inf (Free (Global "a"))
 
 e4 = typeI0 env2 term2
 -- > e4
--- > Right (Fun (TFree (Global "b")) (TFree (Global "b")))
-
-
+-- > Right Inf (Pi (Inf (Free (Global "b"))) (Inf (Free (Global "b"))))
 
