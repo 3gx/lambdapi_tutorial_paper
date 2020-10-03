@@ -183,11 +183,11 @@ id' = Lam (Inf (Bound 0))
 const' = Lam (Lam (Inf (Bound 1)))
 tfree a = Inf (Free (Global a))
 free x = Inf (Free (Global x))
-term1 = Ann id' (Inf (Pi (tfree "a") (tfree "a"))) :@: free "y"
-term2 = Ann const' (Inf (Pi (Inf (Pi  (tfree "b") (tfree "b")))
+term1 = (Ann id' (Inf (Pi (tfree "a") (tfree "a"))) ) :@: (free "y")
+term2 = ((Ann const' (Inf (Pi (Inf (Pi  (tfree "b") (tfree "b")))
                    (Inf (Pi (tfree "a")
-                        (Inf (Pi (tfree "b") (tfree "b")))))))
-        :@: id' :@: free "y"
+                        (Inf (Pi (tfree "b") (tfree "b"))))))))
+        :@: id') :@: (free "y")
 env1 = [(Global "y", VNeutral (NFree (Global "a"))),
         (Global "a", VStar)]
 env2 = [(Global "b", VStar)] ++ env1
@@ -226,4 +226,7 @@ e5 = quote0 (VLam $ \x->
             )
 -- > e5
 -- > Lam (Lam (Inf (Free (Global "y") :@: Inf (Free (Global "x")))))
+--
+e6 = Lam (Lam (Inf ((Bound 0) :@: (Inf (Bound 1)))))
+
 
