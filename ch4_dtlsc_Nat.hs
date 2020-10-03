@@ -1,11 +1,16 @@
 import Control.Monad (unless)
 
+
 data TermI = Ann TermC TermC
            | Star
            | Pi TermC TermC
            | Bound Int
            | Free Name
            | TermI :@: TermC
+           | Nat
+           | NatElim TermC TermC TermC TermC
+           | Zero
+           | Succ TermC
        deriving (Show,Eq)
 
 data TermC = Inf TermI
@@ -21,6 +26,9 @@ data Value = VLam (Value -> Value)
            | VStar
            | VPi Value (Value -> Value)
            | VNeutral Neutral
+           | VNat
+           | VZero
+           | VSucc Value
 
 instance Show Value where
   show x = show (quote0 x)
@@ -130,6 +138,9 @@ quote i VStar = Inf Star
 quote i (VPi v f)
   = Inf (Pi (quote i v) (quote (i+1) (f (vfree (Quote i)))))
 quote i (VNeutral n) = Inf (neutralQuote i n)
+quote i VNat = Inf Nat
+quote i VZero = Inf Zero
+quote i (VSucc v) = Inf $ Succ (quote i v)
 
 neutralQuote :: Int -> Neutral -> TermI
 neutralQuote i (NFree x) = boundfree i x
