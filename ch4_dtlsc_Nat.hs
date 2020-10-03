@@ -90,42 +90,49 @@ typeI0 = typeI 0
 
 
 typeI :: Int -> Context -> TermI -> Result Type
-
 typeI i context (Ann e p)
   = do typeC i context p VStar
        let t = evalC p []
        typeC i context e t
        return t
-
 typeI i context Star
   = return VStar
-
 typeI i context (Pi p p')
   = do typeC i context p VStar
        let t = evalC p []
        typeC (i+1) ((Local i, t) : context)
              (substC 0 (Free (Local i)) p') VStar
        return VStar
-
 typeI i context (Free x)
   = case lookup x context of
        Just t -> return t
        Nothing -> throwError "unknown type identifier"
-
 typeI i context (e :@: e')
   = do s <- typeI i context e
        case s of
           VPi t t' -> do typeC i context e' t
                          return (t' (evalC e' []))
           _ -> throwError "illegal application"
+typeI i context Nat = return VStar
+typeI i context Zero = return VNat
+typeI i context (Succ k) =
+  do typeC i context k VNat
+     return VNat
+typeI i context (NatElim m mz ms k) =
+  do typeC i context m (VPi VNat (const VStar))
+     let mVal = evalC m []
+     typeC i context mz (mVal `vapp` VZero)
+     typeC i context ms (VPi VNat (\l -> VPi (mVal `vapp` l)
+                                             (\_ -> mVal `vapp` VSucc l)))
+     typeC i context k VNat
+     let kVal = evalC k []
+     return (mVal `vapp` kVal)
 
 
 typeC :: Int -> Context -> TermC -> Type -> Result ()
-
 typeC i context (Inf e) v
   = do v' <- typeI i context e
        unless (quote0 v == quote0 v') (throwError "type mismatch")
-
 typeC i context (Lam e) (VPi t t')
   = typeC (i+1) ((Local i, t) : context)
                 (substC 0 (Free (Local i)) e) (t' (vfree (Local i)))
