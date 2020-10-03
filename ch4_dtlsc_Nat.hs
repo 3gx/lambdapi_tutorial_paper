@@ -35,6 +35,7 @@ instance Show Value where
 
 data Neutral = NFree Name
              | NApp Neutral Value
+             | NNatElim Value Value Value Neutral
         deriving Show
 
 
@@ -54,6 +55,20 @@ evalI (Pi t t') d = VPi (evalC t d) (\x -> evalC t' (x : d))
 evalI (Free x)  d = vfree x
 evalI (Bound i) d = d !! i
 evalI (e :@: e') d = vapp (evalI e d) (evalC e' d)
+evalI Nat d = VNat
+evalI Zero d = VZero
+evalI (Succ k) d = VSucc (evalC k d)
+evalI (NatElim m mz ms k) d
+  = let mzVal = evalC mz d
+        msVal = evalC ms d
+        rec kVal =
+          case kVal of
+            VZero -> mzVal
+            VSucc l -> msVal `vapp` l `vapp` rec l
+            VNeutral k -> VNeutral
+                          (NNatElim (evalC m d) mzVal msVal k)
+            _ -> error "internal: eval natElim"
+    in rec (evalC k d)
 
 vapp :: Value -> Value -> Value
 vapp (VLam f) v = f v
