@@ -188,6 +188,10 @@ term2 = ((Ann const' (pi' (pi' (free "b") (free "b"))
                          (pi' (free "a")
                            (pi' (free "b") (free "b")))))
         :@: id') :@: (free "y")
+term2' = ((Ann const' (pi' (pi' (free "b") (free "b"))
+                         (pi' (free "a")
+                           (pi' (free "b") (free "b")))))
+        :@: (free "y")) :@: id'
 env1 = [(Global "y", VNeutral (NFree (Global "a"))),
         (Global "a", VStar)]
 env2 = [(Global "b", VStar)] ++ env1
@@ -203,6 +207,10 @@ e1 = quote0 (evalI term1 [])
 e2 = quote0 (evalI term2 [])
 -- > e2
 -- > Lam (Inf (Bound 0))
+--
+e2' = quote0 (evalI term2' [])
+-- > e2'
+-- > Int (Free (Global "y"))
 
 e3 = typeI0 env1 term1
 -- > e3
