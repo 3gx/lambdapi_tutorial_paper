@@ -213,7 +213,17 @@ e4 = typeI0 env2 term2
 -- > Right Inf (Pi (Inf (Free (Global "b"))) (Inf (Free (Global "b"))))
 
 -- \x -> \y -> y x
-e5 = quote0 (VLam (\x -> VLam (\y -> (VNeutral (NApp  (NFree (Global "y")) (VNeutral (NFree (Global "x"))))))))
+e5 = quote0 (VLam $ \x->
+              (VLam $ \y ->
+                (VNeutral
+                  (NApp
+                    (NFree (Global "y"))
+                    (VNeutral $ NFree (Global "x")
+                    )
+                  )
+                )
+              )
+            )
 -- > e5
 -- > Lam (Lam (Inf (Free (Global "y") :@: Inf (Free (Global "x")))))
 
