@@ -239,6 +239,7 @@ e5 = quote0 (VLam $ \x->
 --
 e6 = Lam (Lam (Inf ((Bound 0) :@: (Inf (Bound 1)))))
 
+{-
 e35 = (Ann
         (Lam
           (Lam $ Inf (Bound 0))
@@ -254,43 +255,36 @@ e35 = (Ann
           )
         )
       )
+-}
 -- > evalI e35 []
 -- > Lam (Lam (Inf (Bound 0)))
 
-e35' = (Ann
+e35 = (Ann
         (Lam
           (Lam $ Inf (Bound 0))
         )
         (pi'
           (Inf Star)
           (pi'
-            (Inf (Bound 1))
+            (Inf (Bound 0))
             (Inf (Bound 1))
           )
-        )
-      )
-
-e35a = (Ann
-        (Lam $ Inf (Bound 0))
-        (pi'
-          (free "a")
-          (free "a")
-        )
-      )
-
-e35b = (Ann
-        (Lam $ Inf (Bound 0))
-        (pi'
-          (Inf Star)
-          (Inf Star)
         )
       )
 
 env35 :: Context
 env35 = [(Global "Bool", VStar),
          (Global "False", VNeutral (NFree (Global "Bool")))]
-apply35 = e35 :@: (free "Bool")
--- > evalI apply35 []
+apply35a = e35 :@: (free "Bool")
+apply35b = apply35a :@: (free "False")
+-- > evalI apply35a []
+-- > Lam (Inf (Bound 0))
+-- > evalI apply35b []
+-- > Inf (Free (Global "False"))
+-- > typeI0 env35 $ Free (Global "False")
+-- > Right Inf (Free (Global "Bool"))
+-- > typeI0 env35 $ Free (Global "Bool")
+-- > Right Inf Star
 
 
 
