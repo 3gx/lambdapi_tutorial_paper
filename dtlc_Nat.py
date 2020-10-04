@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import typing as ty
 from typing import Any as TAny, Callable as TLam, List as TList, \
-                   Dict as TDict, Union as TUnion
+                   Dict as TDict, Union as TUnion, Type as TType, \
+                   TypeVar as TTypeVar
+
 
 AbstractF = ty.TypeVar('AbstractF', bound=TLam[..., TAny])
 def abstract(cls : AbstractF) -> TAny:
@@ -14,176 +16,89 @@ def abstract(cls : AbstractF) -> TAny:
             super().__init__(*args ,**kwargs)
     return Abstract
 
-import dataclasses as dc
-dataclass1 : TLam[[TAny], TAny] = \
-        lambda cls : dc.dataclass(cls, frozen=True, unsafe_hash=True) # type: ignore
+_T = TTypeVar('_T')
 
-dataclass = dc.dataclass
 
-@dataclass
+from dataclasses import dataclass
+
+dc_attrs = {"frozen": True}
+
+@dataclass(**dc_attrs)
 class TermI:
     pass
-
-#@dataclass
-#class Ann(TermI):
-#    e1 : TermC
-#    e2 : TermC
-
+@dataclass(**dc_attrs)
 class Ann(TermI):
-    __slots__ = ['e1', 'e2']
-    def __init__(self, e1 : TermC, e2 : TermC):
-        super().__init__()
-        self.e1 = e1
-        self.e2 = e2
-    def __repr__(self) -> str:
-        return f"(Ann {self.e1}::{self.e2})"
-    def __eq__(self, other : object) -> bool:
-        assert(isinstance(other,Ann))
-        return self.e1 == other.e1 and self.e2 == other.e2
-
+    e1 : TermC
+    e2 : TermC
+@dataclass(**dc_attrs)
 class Star(TermI):
-    __slots__ = ['_']
     def __repr__(self) -> str:
         return f"*"
-    def __eq__(self, other : object) -> bool:
-        assert(isinstance(other, Star))
-        return True
-
+@dataclass(**dc_attrs)
 class Pi(TermI):
-    __slots__ = ['e1', 'e2']
-    def __init__(self, e1 : TermC, e2 : TermC):
-        super().__init__()
-        self.e1 = e1
-        self.e2 = e2
-    def __repr__(self) -> str:
-        return f"(Pi {self.e1}::{self.e2})"
-    def __eq__(self, other : object) -> bool:
-        assert(isinstance(other,Pi))
-        return self.e1 == other.e1 and self.e2 == other.e2
-
+    e1 : TermC
+    e2 : TermC
+@dataclass(**dc_attrs)
 class Bound(TermI):
-    __slots__ = ['i']
-    def __init__(self, pos : int):
-        super().__init__()
-        self.i = pos
-    def __repr__(self) -> str:
-        return f"(Bound {self.i})"
-    def __eq__(self, other : object) -> bool:
-        assert(isinstance(other,Bound))
-        return self.i == other.i
-
+    i : int
+@dataclass(**dc_attrs)
 class Free(TermI):
-    __slots__ = ['x']
-    def __init__(self, name : Name):
-        self.x = name
+    x : Name
     def __repr__(self) -> str:
         return f"{self.x}"
-    def __eq__(self, other : object) -> bool:
-        assert(isinstance(other,Free))
-        return self.x == other.x
-
+@dataclass(**dc_attrs)
 class App(TermI):
-    __slots__ = ['e1','e2']
-    def __init__(self, e1 : TermI, e2 : TermC):
-        self.e1 = e1
-        self.e2 = e2
-    def __repr__(self) -> str:
-        return f"(App {self.e1} {self.e2})"
-    def __eq__(self, other : object) -> bool:
-        assert(isinstance(other,App))
-        return self.e1 == other.e1 and self.e2 == other.e2
+    e1 : TermI
+    e2 : TermC
 
 
-@abstract
+@dataclass(**dc_attrs)
 class TermC:
-    __slots__ = ['_']
+    pass
+@dataclass(**dc_attrs)
 class Inf(TermC):
-    __slots__ = ['e']
-    def __init__(self, e : TermI):
-        super().__init__()
-        self.e = e
+    e : TermI
     def __repr__(self) -> str:
         return f"{self.e}"
-    def __eq__(self, other : object) -> bool:
-        assert(isinstance(other, Inf))
-        return self.e == other.e
-
+@dataclass(**dc_attrs)
 class Lam(TermC):
-    __slots__ = ['e']
-    def __init__(self, expr : TermC):
-        self.e = expr
-    def __repr__(self) -> str:
-        return f"(Lam {self.e})"
-    def __eq__(self, other :object) -> bool:
-        assert(isinstance(other, Lam))
-        return self.e == other.e
+    e : TermC
 
-@abstract
-class Name(): __slots__ = ['_']
-
+@dataclass(**dc_attrs)
+class Name():
+    pass
+@dataclass(**dc_attrs)
 class Global(Name):
-    __slots__ = ['str']
-    def __init__(self, str_ : str):
-        self.str = str_
+    str_ : str
     def __repr__(self) -> str:
-        return f"(Global {self.str})"
-    def __eq__(self, other : object) -> bool:
-        assert(isinstance(other, Global))
-        return self.str == other.str
-    def __hash__(self) -> TAny:
-        return self.str.__hash__()
+        return f"(Global {self.str_})"
 
+@dataclass(**dc_attrs)
 class Local(Name):
-    __slots__ = ['i']
-    def __init__(self, pos : int):
-        self.i = pos
-    def __repr__(self) -> str:
-        return f"(Local {self.i})"
-    def __eq__(self, other : object) -> bool:
-        assert(isinstance(other, Local))
-        return self.i == other.i
-    def __hash__(self) -> TAny:
-        return self.i.__hash__()
-
+    i : int
+@dataclass(**dc_attrs)
 class Quote(Name):
-    __slots__ = ['i']
-    def __init__(self, pos : int):
-        self.i = pos
-    def __repr__(self) -> str:
-        return f"(Quote {self.i})"
-    def __eq__(self, other : object) -> bool:
-        assert(isinstance(other, Quote))
-        return self.i == other.i
-    def __hash__(self) -> TAny:
-        return self.i.__hash__()
+    i : int
 
-@abstract
+@dataclass(**dc_attrs)
 class Value:
-    __slots__=['_']
     def __repr__(self) -> str:
         return f"{quote0(self)}"
-
 class VLam(Value):
     __slots__ = ['f']
     def __init__(self, lam : TLam[[Value], Value]):
         self.f = lam
     def __eq__(self ,other :object) -> bool:
         assert False, "not comparable objects"
-
+@dataclass(**dc_attrs)
 class VNeutral(Value):
-    __slots__ = ['n']
-    def __init__(self, neutral : Neutral):
-        self.n = neutral
-    def __eq__(self, other : object) -> bool:
-        assert(isinstance(other, VNeutral))
-        return self.n == other.n
-
+    n : Neutral
+    def __repr__(self) -> str:
+        return super().__repr__()
+@dataclass(**dc_attrs)
 class VStar(Value):
-    __slots__ = ['n']
-    def __eq__(self, other:object)->bool:
-        assert(isinstance(other, VStar))
-        return True
-
+    def __repr__(self) -> str:
+        return super().__repr__()
 class VPi(Value):
     __slots__ = ['v', 'f']
     def __init__(self, v : Value, f : TLam[[Value], Value]):
@@ -192,22 +107,16 @@ class VPi(Value):
     def __eq__(self ,other :object) -> bool:
         assert False, "not comparable objects"
 
-@abstract
-class Neutral: __slots__ = ['_']
-
+@dataclass(**dc_attrs)
+class Neutral:
+    pass
+@dataclass(**dc_attrs)
 class NFree(Neutral):
-    __slots__ = ['x']
-    def __init__(self, name : Name):
-        self.x = name
-    def __repr__(self) -> str:
-        return f"(NFree {self.x})"
+    x : Name
+@dataclass(**dc_attrs)
 class NApp(Neutral):
-    __slots__ = ['n', 'v']
-    def __init__(self, neutral : Neutral, value : Value):
-        self.n = neutral
-        self.v = value
-    def __repr__(self) -> str:
-        return f"(NApp {self.n} {self.v})"
+    n : Neutral
+    v : Value
 
 Type = Value
 vfree : TLam[[Name],Value] = lambda n :  VNeutral(NFree(n))
@@ -371,8 +280,8 @@ env1 : Context = {Global("y"): VNeutral(NFree(Global("a"))),
 env2 = env1.copy()
 env2.update({Global("b"): VStar()})
 
-print("eval(term1)", evalI(term1, []))
-print("qeval(term1)", quote0(evalI(term1, [])))
+print("eval(term1)=", evalI(term1, []))
+print("qeval(term1)=", quote0(evalI(term1, [])))
 print("qqeval(term2)=", quote0(evalI(term2, [])))
 print("type(term1)=", typeI0(env1, term1))
 print("type(term2)=", typeI0(env2, term2))
