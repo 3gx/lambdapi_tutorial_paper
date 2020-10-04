@@ -442,7 +442,10 @@ n2  = int2nat(2)
 print("n2=", n2)
 print("type(n40)=", typeI0({},ty.cast(Inf,n40).e))
 print("type(plus(n40))=", typeI0({},plus(n40)))
-n42 = nval2int(evalI(App(plus(n40),n2), []))
-print(n42)
+n42term = App(plus(n40),n2)
+print("type(n42term)=", typeI0({}, n42term))
+n42 = evalI(n42term, [])
+#n42 = nval2int(evalI(App(plus(n40),n2), []))
+#print(n42)
 ## > n42
 ## 42
