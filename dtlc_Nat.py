@@ -181,7 +181,7 @@ def evalI(term : TermI, env : Env) -> Value:
             if isinstance(kVal, VZero):
                 return VZero()
             elif isinstance(kVal, VSucc):
-                return vapp(vapp(msVal, kVal.k), kVal.k)
+                return vapp(vapp(msVal, kVal.k), rec(kVal.k))
             elif isinstance(kVal, VNeutral):
                 return VNeutral(NNatElim(evalC(m,env), mzVal, msVal, kVal.n))
             raise TypeError(f"Unknown instance '{type(kVal)}'")
@@ -240,6 +240,8 @@ def typeI(i : int, c : Context, term : TermI) -> Type:
     elif isinstance(term, Nat):
         return VStar()
     elif isinstance(term, Zero):
+        return VNat()
+    elif isinstance(term, Succ):
         return VNat()
     elif isinstance(term, NatElim):
         m, mz, ms, k = (term.e1, term.e2, term.e3, term.e4)
@@ -434,9 +436,11 @@ def nval2int(v : Value) -> int:
 ## > plus 40 2
 ## 42 :: Nat
 n40 = int2nat(40)
-print(n40)
+print("n40=", n40)
 n2  = int2nat(2)
-print(n2)
+print("n2=", n2)
+print("type(n40)=", typeI0({},ty.cast(Inf,n40).e))
+print("type(plus(n40))=", typeI0({},plus(n40)))
 #n42 = nval2int(evalI(App(plus(n40),n2), []))
 #print(n42)
 ## > n42
