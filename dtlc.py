@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as ty
 from typing import Any as TAny, Callable as TLam, List as TList, \
-                   Dict as TDict
+                   Dict as TDict, Union as TUnion
 
 AbstractF = ty.TypeVar('AbstractF', bound=TLam[..., TAny])
 def abstract(cls : AbstractF) -> TAny:
@@ -87,7 +87,7 @@ class App(TermI):
 class TermC:
     __slots__ = ['_']
 class Inf(TermC):
-    __slots__ = ['i']
+    __slots__ = ['e']
     def __init__(self, e : TermI):
         super().__init__()
         self.e = e
@@ -147,14 +147,17 @@ class Quote(Name):
         return self.i.__hash__()
 
 @abstract
-class Value: __slots__=['_']
+class Value:
+    __slots__=['_']
+    def __repr__(self) -> str:
+        return f"{quote0(self)}"
 
 class VLam(Value):
     __slots__ = ['f']
     def __init__(self, lam : TLam[[Value], Value]):
         self.f = lam
-    def __repr__(self) -> str:
-        return f"(VLam {self.f})"
+#    def __repr__(self) -> str:
+#        return f"(VLam {self.f})"
     def __eq__(self ,other :object) -> bool:
         assert False, "not comparable objects"
 
@@ -162,16 +165,16 @@ class VNeutral(Value):
     __slots__ = ['n']
     def __init__(self, neutral : Neutral):
         self.n = neutral
-    def __repr__(self) -> str:
-        return f"(VNeutral {self.n})"
+#    def __repr__(self) -> str:
+#        return f"(VNeutral {self.n})"
     def __eq__(self, other : object) -> bool:
         assert(isinstance(other, VNeutral))
         return self.n == other.n
 
 class VStar(Value):
     __slots__ = ['n']
-    def __repr__(self) -> str:
-        return "*"
+#    def __repr__(self) -> str:
+#        return "*"
     def __eq__(self, other:object)->bool:
         assert(isinstance(other, VStar))
         return True
@@ -181,8 +184,8 @@ class VPi(Value):
     def __init__(self, v : Value, f : TLam[[Value], Value]):
         self.v = v
         self.f = f
-    def __repr__(self) -> str:
-        return f"(VPi {self.v} {self.f})"
+#    def __repr__(self) -> str:
+#        return f"(VPi {self.v} {self.f})"
     def __eq__(self ,other :object) -> bool:
         assert False, "not comparable objects"
 
@@ -206,7 +209,7 @@ class NApp(Neutral):
 Type = Value
 vfree : TLam[[Name],Value] = lambda n :  VNeutral(NFree(n))
 Env = TList[Value]
-Context = TDict[Name, Info]
+Context = TDict[Name, Type]
 
 def evalI(term : TermI, env : Env) -> Value:
     if isinstance(term, Ann):
@@ -243,56 +246,74 @@ def evalC(term : TermC, env : Env) -> Value:
 def typeI0(c : Context, term : TermI) -> Type:
     return typeI(0, c, term)
 
-def typeI(i : int, c : Context, term : TermI) -> Type:
-    if isinstance(term, Ann):
-        kindC(c, term.t, Star())
-        typeC(i, c, term.e, term.t)
-        return term.t
-    elif isinstance(term, Free):
-        info = c[term.x]
-        if isinstance(info, HasType):
-            return info.t
-        else:
-            raise RuntimeError(f"unknown type identifier '{term.x}'")
-    elif isinstance(term, App):
-        f = typeI(i, c, term.e)
-        if isinstance(f, Fun):
-            typeC(i, c, term.ep, f.t)
-            return f.tp
-    raise TypeError(f"Unknown instance '{type(term)}'")
-
 def dict_merge(a : TDict[TAny, TAny],
                b : TDict[TAny, TAny]) -> TDict[TAny, TAny]:
     a = a.copy()
     a.update(b)
     return a
 
+def typeI(i : int, c : Context, term : TermI) -> Type:
+    if isinstance(term, Ann):
+        typeC(i, c, term.e2, VStar())
+        t = evalC(term.e2, [])
+        typeC(i, c, term.e1, t)
+        return t
+    elif isinstance(term, Free):
+        return c[term.x]
+    elif isinstance(term, App):
+        s = typeI(i, c, term.e1)
+        if isinstance(s, VPi):
+            typeC(i, c, term.e2, s.v)
+            return s.f(evalC(term.e2, []))
+    elif isinstance(term, Star):
+        return VStar()
+    elif isinstance(term, Pi):
+        p = term.e1
+        p1 = term.e2
+        typeC(i,c,p,VStar())
+        t = evalC(p, [])
+        typeC(i+1,dict_merge({Local(i): t}, c),
+                  substC(0, Free(Local(i)), p1),
+                  VStar())
+        return VStar()
+    raise TypeError(f"Unknown instance '{type(term)}'")
+
 def typeC(i : int, c: Context, term : TermC, ty : Type) -> None:
+    e : TUnion[TermI, TermC]
     if isinstance(term, Inf):
-        ty1 = typeI(i, c, term.i)
-        if ty != ty1:
-            raise TypeError(f"type mismatch: {ty} != {ty1}")
+        e = term.e
+        v = ty
+        v1 = typeI(i, c, e)
+        if quote0(v) != quote0(v1):
+            raise TypeError(f"type mismatch: {v} != {v1}")
         return
-    elif isinstance(term, Lam) and isinstance(ty, Fun):
-        typeC(i+1, dict_merge({Local(i): HasType(ty.t)}, c),
-                   substC(0, Free(Local(i)), term.e), ty.tp)
+    elif isinstance(term, Lam) and isinstance(ty, VPi):
+        e = term.e
+        t = ty.v
+        tp = ty.f
+        typeC(i+1, dict_merge({Local(i): t}, c),
+                   substC(0, Free(Local(i)), e), tp(vfree(Local(i))))
         return
     raise TypeError(f"Type mismatch: term={term}', type={type}")
 
 def substI(i : int, r : TermI, t : TermI) -> TermI:
     if isinstance(t, Ann):
-        return Ann(substC(i,r,t.e), t.t)
+        return Ann(substC(i,r,t.e1), t.e2)
     elif isinstance(t, Bound):
         return r if i == t.i else t
     elif isinstance(t, Free):
         return t
     elif isinstance(t, App):
-        return substI(i, r, App(t.e, substC(i,r,t.ep)))
+        return substI(i, r, App(t.e1, substC(i,r,t.e2)))
+    elif isinstance(t, Star):
+        return Star()
+    elif isinstance(t, Pi):
+        return Pi(substC(i,r,t.e1), substC(i+1, r, t.e2))
     raise TypeError(f"Unknown instance '{type(t)}'")
 
 def substC(i : int, r : TermI, t : TermC) -> TermC:
     if isinstance(t, Inf):
-        return Inf(substI(i,r,t.i))
+        return Inf(substI(i,r,t.e))
     elif isinstance(t, Lam):
         return Lam(substC(i+1, r, t.e))
     raise TypeError(f"Unknown instance '{type(t)}'")
@@ -354,6 +375,11 @@ def quote(i : int, v : Value) -> TermC:
         return Lam(quote(i+1, v.f(vfree(Quote(i)))))
     elif isinstance(v, VNeutral):
         return Inf(neutralQuote(i,v.n))
+    elif isinstance(v, VStar):
+        return Inf(Star())
+    elif isinstance(v, VPi):
+        return Inf(Pi(quote(i,v.v),
+                      quote(i+1, v.f(vfree(Quote(i))))))
     raise TypeError(f"Unknown instance '{type(v)}'")
 
 def neutralQuote(i : int, n : Neutral) -> TermI:
@@ -374,17 +400,17 @@ print(e0)
 
 id_ = Lam (Inf (Bound(0)))
 const_ = Lam (Lam (Inf (Bound(1))))
-tfree : TLam[[str], TFree] = lambda a : TFree (Global(a))
-free : TLam[[str],Inf] = lambda x : Inf (Free (Global(x)))
-term1 = App(Ann(id_,(Fun (tfree("a"),tfree("a")))), free("y"))
-term2 = App(App(Ann(const_,Fun (Fun(tfree("b"),tfree("b")),
-                   (Fun (tfree("a"),
-                        (Fun (tfree("b"),tfree("b"))))))),
+free : TLam[[str],TermC] = lambda x : Inf (Free (Global(x)))
+pi : TLam[[TermC, TermC], TermC] = lambda x,y : Inf(Pi(x,y))
+term1 = App(Ann(id_,(pi (free("a"),free("a")))), free("y"))
+term2 = App(App(Ann(const_,pi(pi(free("b"),free("b")),
+                   pi(free("a"),
+                        pi(free("b"),free("b"))))),
         id_), free("y"))
-env1 : Context = {Global("y"): HasType(tfree("a")),
-                  Global("a"): HasKind(Star())}
+env1 : Context = {Global("y"): VNeutral(NFree(Global("a"))),
+                  Global("a"): VStar()}
 env2 = env1.copy()
-env2.update({Global("b"): HasKind(Star())})
+env2.update({Global("b"): VStar()})
 
 print(evalI(term1, []))
 print(quote0(evalI(term1, [])))
