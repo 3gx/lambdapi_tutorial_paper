@@ -280,8 +280,8 @@ apply35b = apply35a :@: (free "False")
 -- Right Inf Star
 
 -- > let plus = natElim (\_ -> Nat -> Nat)
---                    (\n -> n)
---                    (\k rec n -> Succ (rec n))
+--                      (\n -> n)
+--                      (\k rec n -> Succ (rec n))
 -- plus :: Pi (x :: Nat) (y :: Nat) . Nat
 -- > plus 40 2
 -- 42 :: Nat
