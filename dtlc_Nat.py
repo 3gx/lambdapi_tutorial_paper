@@ -5,20 +5,6 @@ from typing import Any as TAny, Callable as TLam, List as TList, \
                    Dict as TDict, Union as TUnion, Type as TType, \
                    TypeVar as TTypeVar
 
-
-AbstractF = ty.TypeVar('AbstractF', bound=TLam[..., TAny])
-def abstract(cls : AbstractF) -> TAny:
-    class Abstract(cls): # type: ignore
-        __slots__ = cls.__slots__
-        def __init__(self : Abstract, *args : TAny, **kwargs : TAny) -> None:
-            if type(self) == Abstract:
-                raise TypeError(f"'{cls.__name__}' is an abstract class")
-            super().__init__(*args ,**kwargs)
-    return Abstract
-
-_T = TTypeVar('_T')
-
-
 from dataclasses import dataclass
 
 dc_attrs = {"frozen": True}
