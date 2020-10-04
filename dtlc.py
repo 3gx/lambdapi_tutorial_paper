@@ -66,7 +66,8 @@ class Free(TermI):
     def __init__(self, name : Name):
         self.x = name
     def __repr__(self) -> str:
-        return f"(Free {self.x})"
+        return f"{self.x}"
+#        return f"(Free {self.x})"
     def __eq__(self, other : object) -> bool:
         assert(isinstance(other,Free))
         return self.x == other.x
@@ -92,7 +93,8 @@ class Inf(TermC):
         super().__init__()
         self.e = e
     def __repr__(self) -> str:
-        return f"(Inf {self.e})"
+        return f"{self.e}"
+#        return f"(Inf {self.e})"
     def __eq__(self, other : object) -> bool:
         assert(isinstance(other, Inf))
         return self.e == other.e
@@ -417,3 +419,33 @@ print(quote0(evalI(term1, [])))
 print(quote0(evalI(term2, [])))
 print(typeI0(env1, term1))
 print(typeI0(env2, term2))
+
+# example for the following concrete syntax
+# > let id = (\a x -> x) :: Pi (a :: *).a -> a
+# id :: Pi (x::*) (y::x).x
+e35 = Ann(
+        Lam(
+          Lam(Inf(Bound(0)))
+        ),
+        pi(
+          (Inf(Star())),
+          pi(
+            Inf(Bound(0)),
+            Inf(Bound(1)),
+          )
+        )
+      )
+print(f"e35= {e35}")
+
+env35 : Context
+env35 = {Global("Bool"):VStar(),
+         Global("False"):VNeutral(NFree(Global("Bool")))}
+print(f"type(e35)= {typeI0(env35, e35)}")
+
+apply35a = App(e35, free("Bool"))
+print(f"apply35a= {apply35a}")
+print(f"type(apply35a)= {typeI0(env35, apply35a)}")
+
+apply35b = App(apply35a, free("False"))
+print(f"apply35b= {apply35b}")
+print(f"type(apply35b)= {typeI0(env35, apply35b)}")
