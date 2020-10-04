@@ -67,7 +67,6 @@ class Free(TermI):
         self.x = name
     def __repr__(self) -> str:
         return f"{self.x}"
-#        return f"(Free {self.x})"
     def __eq__(self, other : object) -> bool:
         assert(isinstance(other,Free))
         return self.x == other.x
@@ -94,7 +93,6 @@ class Inf(TermC):
         self.e = e
     def __repr__(self) -> str:
         return f"{self.e}"
-#        return f"(Inf {self.e})"
     def __eq__(self, other : object) -> bool:
         assert(isinstance(other, Inf))
         return self.e == other.e
@@ -158,8 +156,6 @@ class VLam(Value):
     __slots__ = ['f']
     def __init__(self, lam : TLam[[Value], Value]):
         self.f = lam
-#    def __repr__(self) -> str:
-#        return f"(VLam {self.f})"
     def __eq__(self ,other :object) -> bool:
         assert False, "not comparable objects"
 
@@ -167,16 +163,12 @@ class VNeutral(Value):
     __slots__ = ['n']
     def __init__(self, neutral : Neutral):
         self.n = neutral
-#    def __repr__(self) -> str:
-#        return f"(VNeutral {self.n})"
     def __eq__(self, other : object) -> bool:
         assert(isinstance(other, VNeutral))
         return self.n == other.n
 
 class VStar(Value):
     __slots__ = ['n']
-#    def __repr__(self) -> str:
-#        return "*"
     def __eq__(self, other:object)->bool:
         assert(isinstance(other, VStar))
         return True
@@ -186,8 +178,6 @@ class VPi(Value):
     def __init__(self, v : Value, f : TLam[[Value], Value]):
         self.v = v
         self.f = f
-#    def __repr__(self) -> str:
-#        return f"(VPi {self.v} {self.f})"
     def __eq__(self ,other :object) -> bool:
         assert False, "not comparable objects"
 
@@ -324,54 +314,6 @@ def quote0(v : Value) -> TermC:
     return quote(0,v)
 
 
-"""
---------------------------------------------------
-@claim
-def quote1(_1 : int, _2 : Value) -> TermC: pass
-
-generates:
-quote1__dict = dict()
-def quote1(_1 : int, _2 : Value) -> TermC:
-    assert(isinstance(_1,int))
-    assert(isinstance(_2,Value))
-    quote1__args = (int, Value)
-    return quote1_dict["_1__{int.__name__},
-                        _2__{Value.__name__}"](_1, _2)
-
------------------------------------------------------
-
-@define
-def quote1(i, _1 : VLam(f)):
-    return Lam(quote(i+1, f(vfree(Quote(i)))))
-
-generates
-
-quote1__dict.update(f"_1__{int.__name__},
-                      _2__{VLam.__name__}":quote1__VLam)
-def quote1__VLam(_1 : int, _2 : VLam) -> TermC:
-    assert(isinstance(_2, VLam))
-    i = _1
-    f = _2.expr
-    return Lam(quote(i+1, f(vfree(Quote(i)))))
-
--------------------------------------------
-
-@match
-def quote1(i, _ : VNeutral(n)):
-    return Inf(neutralQuote(i,n))
-
-generates
-
-quote1__dict.update(f"_1__{int.__name__},
-                      _2__{NVeutral.__name__}":quote1__VNeutral)
-
-def quote1__VNeutral(_1 : int, _2 : VNeutral) -> TermC:
-    assert(isinstancE(_2, VNeutral))
-    i = _1
-    n = _2.neutral
-    return Inf(Neutral(i,n))
-"""
-
 def quote(i : int, v : Value) -> TermC:
     if isinstance(v, VLam):
         return Lam(quote(i+1, v.f(vfree(Quote(i)))))
@@ -396,6 +338,10 @@ def boundfree(i : int, x : Name) -> TermI:
         return Bound(i-x.i-1)
     else:
         return Free(x)
+
+###############################################################################
+# Examples
+###############################################################################
 
 e0 = quote0 (VLam (lambda x : VLam (lambda y : x)))
 print(e0)
