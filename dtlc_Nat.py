@@ -344,7 +344,7 @@ def boundfree(i : int, x : Name) -> TermI:
 ###############################################################################
 
 e0 = quote0 (VLam (lambda x : VLam (lambda y : x)))
-print(e0)
+print("e0=", e0)
 
 id_ = Lam (Inf (Bound(0)))
 const_ = Lam (Lam (Inf (Bound(1))))
@@ -360,11 +360,11 @@ env1 : Context = {Global("y"): VNeutral(NFree(Global("a"))),
 env2 = env1.copy()
 env2.update({Global("b"): VStar()})
 
-print(evalI(term1, []))
-print(quote0(evalI(term1, [])))
-print(quote0(evalI(term2, [])))
-print(typeI0(env1, term1))
-print(typeI0(env2, term2))
+print("eval(term1)", evalI(term1, []))
+print("qeval(term1)", quote0(evalI(term1, [])))
+print("qqeval(term2)=", quote0(evalI(term2, [])))
+print("type(term1)=", typeI0(env1, term1))
+print("type(term2)=", typeI0(env2, term2))
 
 # example for the following concrete syntax
 # > let id = (\a x -> x) :: Pi (a :: *).a -> a
