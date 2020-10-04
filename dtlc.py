@@ -19,13 +19,36 @@ class TermI:
     __slots__ = ['_']
 
 class Ann(TermI):
-    __slots__ = ['e', 't']
-    def __init__(self, expr : TermC, type_ : Type):
+    __slots__ = ['e1', 'e2']
+    def __init__(self, e1 : TermC, e2 : TermC):
         super().__init__()
-        self.e = expr
-        self.t = type_
+        self.e1 = e1
+        self.e2 = e2
     def __repr__(self) -> str:
-        return f"{self.e}::{self.t}"
+        return f"(Ann {self.e1}::{self.e2})"
+    def __eq__(self, other : object) -> bool:
+        assert(isinstance(other,Ann))
+        return self.e1 == other.e1 and self.e2 == other.e2
+
+class Star(TermI):
+    __slots__ = ['_']
+    def __repr__(self) -> str:
+        return f"*"
+    def __eq__(self, other : object) -> bool:
+        assert(isinstance(other, Star))
+        return True
+
+class Pi(TermI):
+    __slots__ = ['e1', 'e2']
+    def __init__(self, e1 : TermC, e2 : TermC):
+        super().__init__()
+        self.e1 = e1
+        self.e2 = e2
+    def __repr__(self) -> str:
+        return f"(Pi {self.e1}::{self.e2})"
+    def __eq__(self, other : object) -> bool:
+        assert(isinstance(other,Pi))
+        return self.e1 == other.e1 and self.e2 == other.e2
 
 class Bound(TermI):
     __slots__ = ['i']
@@ -34,6 +57,9 @@ class Bound(TermI):
         self.i = pos
     def __repr__(self) -> str:
         return f"(Bound {self.i})"
+    def __eq__(self, other : object) -> bool:
+        assert(isinstance(other,Bound))
+        return self.i == other.i
 
 class Free(TermI):
     __slots__ = ['x']
@@ -41,14 +67,20 @@ class Free(TermI):
         self.x = name
     def __repr__(self) -> str:
         return f"(Free {self.x})"
+    def __eq__(self, other : object) -> bool:
+        assert(isinstance(other,Free))
+        return self.x == other.x
 
 class App(TermI):
-    __slots__ = ['e','ep']
-    def __init__(self, termFun : TermI, termArg : TermC):
-        self.e = termFun
-        self.ep = termArg
+    __slots__ = ['e1','e2']
+    def __init__(self, e1 : TermI, e2 : TermC):
+        self.e1 = e1
+        self.e2 = e2
     def __repr__(self) -> str:
-        return f"{self.e}@{self.ep}"
+        return f"(App {self.e1} {self.e2})"
+    def __eq__(self, other : object) -> bool:
+        assert(isinstance(other,App))
+        return self.e1 == other.e1 and self.e2 == other.e2
 
 
 @abstract
@@ -56,17 +88,24 @@ class TermC:
     __slots__ = ['_']
 class Inf(TermC):
     __slots__ = ['i']
-    def __init__(self, iterm : TermI):
+    def __init__(self, e : TermI):
         super().__init__()
-        self.i = iterm
+        self.e = e
     def __repr__(self) -> str:
-        return f"(Inf {self.i})"
+        return f"(Inf {self.e})"
+    def __eq__(self, other : object) -> bool:
+        assert(isinstance(other, Inf))
+        return self.e == other.e
+
 class Lam(TermC):
     __slots__ = ['e']
     def __init__(self, expr : TermC):
         self.e = expr
     def __repr__(self) -> str:
         return f"(Lam {self.e})"
+    def __eq__(self, other :object) -> bool:
+        assert(isinstance(other, Lam))
+        return self.e == other.e
 
 @abstract
 class Name(): __slots__ = ['_']
@@ -77,7 +116,7 @@ class Global(Name):
         self.str = str_
     def __repr__(self) -> str:
         return f"(Global {self.str})"
-    def __eq__(self, other : Global) -> bool: # type: ignore
+    def __eq__(self, other : object) -> bool:
         assert(isinstance(other, Global))
         return self.str == other.str
     def __hash__(self) -> TAny:
@@ -89,7 +128,7 @@ class Local(Name):
         self.i = pos
     def __repr__(self) -> str:
         return f"(Local {self.i})"
-    def __eq__(self, other : Local) -> bool: # type: ignore
+    def __eq__(self, other : object) -> bool:
         assert(isinstance(other, Local))
         return self.i == other.i
     def __hash__(self) -> TAny:
@@ -101,35 +140,11 @@ class Quote(Name):
         self.i = pos
     def __repr__(self) -> str:
         return f"(Quote {self.i})"
-    def __eq__(self, other : Quote) -> bool: # type: ignore
+    def __eq__(self, other : object) -> bool:
         assert(isinstance(other, Quote))
         return self.i == other.i
     def __hash__(self) -> TAny:
         return self.i.__hash__()
-
-@abstract
-class Type: __slots__ = ['_']
-
-class TFree(Type):
-    __slots__ = ['x']
-    def __init__(self, name : Name):
-        self.x = name
-    def __repr__(self) -> str:
-        return f"(TFree {self.x})"
-    def __eq__(self, other : TFree) -> bool: # type: ignore
-        assert(isinstance(other, TFree))
-        return self.x == other.x
-
-class Fun(Type):
-    __slots__ = ['t','tp']
-    def __init__(self, typePrm : Type, typeRes : Type):
-        self.t = typePrm
-        self.tp = typeRes
-    def __repr__(self) -> str:
-        return f"(Fun {self.t} {self.tp})"
-    def __eq__(self, other : Fun) -> bool: # type: ignore
-        assert(isinstance(other, Fun))
-        return self.t == other.tp and self.tp == other.tp
 
 @abstract
 class Value: __slots__=['_']
@@ -140,6 +155,8 @@ class VLam(Value):
         self.f = lam
     def __repr__(self) -> str:
         return f"(VLam {self.f})"
+    def __eq__(self ,other :object) -> bool:
+        assert False, "not comparable objects"
 
 class VNeutral(Value):
     __slots__ = ['n']
@@ -147,6 +164,27 @@ class VNeutral(Value):
         self.n = neutral
     def __repr__(self) -> str:
         return f"(VNeutral {self.n})"
+    def __eq__(self, other : object) -> bool:
+        assert(isinstance(other, VNeutral))
+        return self.n == other.n
+
+class VStar(Value):
+    __slots__ = ['n']
+    def __repr__(self) -> str:
+        return "*"
+    def __eq__(self, other:object)->bool:
+        assert(isinstance(other, VStar))
+        return True
+
+class VPi(Value):
+    __slots__ = ['v', 'f']
+    def __init__(self, v : Value, f : TLam[[Value], Value]):
+        self.v = v
+        self.f = f
+    def __repr__(self) -> str:
+        return f"(VPi {self.v} {self.f})"
+    def __eq__(self ,other :object) -> bool:
+        assert False, "not comparable objects"
 
 @abstract
 class Neutral: __slots__ = ['_']
@@ -165,19 +203,25 @@ class NApp(Neutral):
     def __repr__(self) -> str:
         return f"(NApp {self.n} {self.v})"
 
+Type = Value
 vfree : TLam[[Name],Value] = lambda n :  VNeutral(NFree(n))
-
 Env = TList[Value]
+Context = TDict[Name, Info]
 
 def evalI(term : TermI, env : Env) -> Value:
     if isinstance(term, Ann):
-        return evalC(term.e, env)
+        return evalC(term.e1, env)
     elif isinstance(term, Free):
         return vfree(term.x)
     elif isinstance(term, Bound):
         return env[term.i]
     elif isinstance(term, App):
-        return vapp(evalI(term.e, env), evalC(term.ep, env))
+        return vapp(evalI(term.e1, env), evalC(term.e2, env))
+    elif isinstance(term, Star):
+        return VStar()
+    elif isinstance(term, Pi):
+        e2 = term.e2
+        return VPi(evalC(term.e1,env), lambda x: evalC(e2, [x] + env))
     raise TypeError(f"Unknown instance '{type(term)}'")
 
 def vapp(v : Value, v1 : Value) -> Value:
@@ -189,48 +233,12 @@ def vapp(v : Value, v1 : Value) -> Value:
 
 def evalC(term : TermC, env : Env) -> Value:
     if isinstance(term, Inf):
-        return evalI(term.i, env)
+        return evalI(term.e, env)
     elif isinstance(term, Lam):
         lam_expr = term.e
         return VLam(lambda x : evalC(lam_expr, [x] + env))
     raise TypeError(f"Unknown instance '{type(term)}'")
 
-@abstract
-class Kind: __slots__ = ['_']
-class Star(Kind):
-    __slots__ = ['_']
-    def __repr__(self) -> str:
-        return f"Star"
-
-@abstract
-class Info: __slots__ = ['_']
-class HasKind(Info):
-    __slots__ = ['kind']
-    def __init__(self, kind : Kind):
-        self.kind = kind
-    def __repr__(self) -> str:
-        return f"(HasKind {self.kind})"
-class HasType(Info):
-    __slots__ = ['t']
-    def __init__(self, type_ : Type):
-        self.t = type_
-    def __repr__(self) -> str:
-        return f"(HasType {self.t})"
-
-Context = TDict[Name, Info]
-
-def kindC(c : Context, term : Type, k : Kind) -> None:
-    assert(isinstance(k, Star))
-    if isinstance(term, TFree):
-        if isinstance(c[term.x], HasKind):
-            return
-        else:
-            raise RuntimeError(f"unknown var identifier '{term.x}'")
-    elif isinstance(term, Fun):
-        kindC(c, term.t, Star())
-        kindC(c, term.tp, Star())
-        return
-    raise TypeError(f"Unknown instance '{type(term)}'")
 
 def typeI0(c : Context, term : TermI) -> Type:
     return typeI(0, c, term)
