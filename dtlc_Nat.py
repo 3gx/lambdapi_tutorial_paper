@@ -14,13 +14,20 @@ def abstract(cls : AbstractF) -> TAny:
             super().__init__(*args ,**kwargs)
     return Abstract
 
-import dataclasses
-dataclass : TLam[[TAny], TAny] = \
+import dataclasses as dc
+dataclass1 : TLam[[TAny], TAny] = \
         lambda cls : dc.dataclass(cls, frozen=True, unsafe_hash=True) # type: ignore
 
-@abstract
+dataclass = dc.dataclass
+
+@dataclass
 class TermI:
-    __slots__ = ['_']
+    pass
+
+#@dataclass
+#class Ann(TermI):
+#    e1 : TermC
+#    e2 : TermC
 
 class Ann(TermI):
     __slots__ = ['e1', 'e2']
