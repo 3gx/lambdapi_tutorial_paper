@@ -3,11 +3,22 @@ from __future__ import annotations
 import typing as ty
 from typing import Any as TAny, Callable as TLam, List as TList, \
                    Dict as TDict, Union as TUnion, Type as TType, \
-                   TypeVar as TTypeVar
+                   TypeVar as TTypeVar, Generic as TGeneric
 
 from dataclasses import dataclass
 
 dc_attrs = {"frozen": True}
+
+
+# --start-of-war--  mypy issue: https://github.com/python/mypy/issues/5485
+_BoxT = TTypeVar("_BoxT")
+@dataclass
+class Box(TGeneric[_BoxT]):
+    inner: _BoxT
+    @property
+    def __call__(self) -> _BoxT:
+        return self.inner
+# --end-of-war--
 
 @dataclass(**dc_attrs)
 class TermI:
@@ -70,13 +81,11 @@ class Quote(Name):
 class Value:
     def __repr__(self) -> str:
         return f"{quote0(self)}"
-VFunT = TLam[[Value], Value]
+_VFunT0 = TLam[[Value], Value]
+_VFunT = TUnion[Box[_VFunT0], _VFunT0]
 @dataclass(**dc_attrs)
 class VLam(Value):
-    f_ : VFunT
-    @property  # workaround for dataclasses messing up function type
-    def f(self) -> VFunT:
-        return ty.cast(VFunT, self.f_)
+    f : _VFunT
     def __repr__(self) -> str:
         return super().__repr__()
 @dataclass(**dc_attrs)
@@ -91,10 +100,7 @@ class VStar(Value):
 @dataclass(**dc_attrs)
 class VPi(Value):
     v : Value
-    f_ : VFunT
-    @property
-    def f(self) -> VFunT:
-        return ty.cast(VFunT, self.f_)
+    f : _VFunT
     def __repr__(self) -> str:
         return super().__repr__()
 
