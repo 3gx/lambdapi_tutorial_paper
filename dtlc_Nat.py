@@ -47,6 +47,21 @@ class Free(TermI):
 class App(TermI):
     e1 : TermI
     e2 : TermC
+@dataclass(**_dc_attrs)
+class Nat(TermI):
+    pass
+@dataclass(**_dc_attrs)
+class NatElim(TermI):
+    e1 : TermC
+    e2 : TermC
+    e3 : TermC
+    e4 : TermC
+@dataclass(**_dc_attrs)
+class Zero(TermI):
+    pass
+@dataclass(**_dc_attrs)
+class Succ(TermI):
+    k : TermC
 
 
 @dataclass(**_dc_attrs)
@@ -103,6 +118,16 @@ class VPi(Value):
     f : _VFunT
     def __repr__(self) -> str:
         return super().__repr__()
+@dataclass(**_dc_attrs)
+class VNat(Value):
+    pass
+@dataclass(**_dc_attrs)
+class VZero(Value):
+    pass
+@dataclass(**_dc_attrs)
+class VSucc(Value):
+    k : Value
+
 
 @dataclass(**_dc_attrs)
 class Neutral:
@@ -114,6 +139,12 @@ class NFree(Neutral):
 class NApp(Neutral):
     n : Neutral
     v : Value
+@dataclass(**_dc_attrs)
+class NNatElim(Neutral):
+    v1 : Value
+    v2 : Value
+    v3 : Value
+    n  : Neutral
 
 Type = Value
 vfree : TLam[[Name],Value] = lambda n :  VNeutral(NFree(n))
@@ -134,6 +165,25 @@ def evalI(term : TermI, env : Env) -> Value:
     elif isinstance(term, Pi):
         e2 = term.e2
         return VPi(evalC(term.e1,env), lambda x: evalC(e2, [x] + env))
+    elif isinstance(term, Nat):
+        return VNat()
+    elif isinstance(term, Zero):
+        return VZero()
+    elif isinstance(term, Succ):
+        return VSucc(evalC(term.k, env))
+    elif isinstance(term, NatElim):
+        m, mz, ms, k = (term.e1, term.e2, term.e3, term.e4)
+        mzVal = evalC(mz, env)
+        msVal = evalC(ms, env)
+        def rec(kVal : Value) -> Value:
+            if isinstance(kVal, VZero):
+                return VZero()
+            elif isinstance(kVal, VSucc):
+                return vapp(vapp(msVal, kVal.k), kVal.k)
+            elif isinstance(kVal, VNeutral):
+                return VNeutral(NNatElim(evalC(m,env), mzVal, msVal, kVal.n))
+            raise TypeError(f"Unknown instance '{type(kVal)}'")
+        return rec(evalC(k, env))
     raise TypeError(f"Unknown instance '{type(term)}'")
 
 def vapp(v : Value, v1 : Value) -> Value:
@@ -185,6 +235,22 @@ def typeI(i : int, c : Context, term : TermI) -> Type:
                   substC(0, Free(Local(i)), p1),
                   VStar())
         return VStar()
+    elif isinstance(term, Nat):
+        return VStar()
+    elif isinstance(term, Zero):
+        return VNat()
+    elif isinstance(term, NatElim):
+        m, mz, ms, k = (term.e1, term.e2, term.e3, term.e4)
+        typeC(i,c,m,VPi(VNat(), lambda _ : VStar()))
+        mVal = evalC(m, [])
+        typeC(i,c,mz, vapp(mVal, VZero()))
+        typeC(i,c,ms,
+                VPi(VNat(),
+                    lambda l : VPi(vapp(mVal,l),
+                            lambda _ : vapp(mVal, VSucc(l)))))
+        typeC(i, c, k, VNat())
+        kVal = evalC(k, [])
+        return vapp(mVal, kVal)
     raise TypeError(f"Unknown instance '{type(term)}'")
 
 def typeC(i : int, c: Context, term : TermC, ty : Type) -> None:
@@ -218,6 +284,18 @@ def substI(i : int, r : TermI, t : TermI) -> TermI:
         return Star()
     elif isinstance(t, Pi):
         return Pi(substC(i,r,t.e1), substC(i+1, r, t.e2))
+    elif isinstance(t, Nat):
+        return Nat()
+    elif isinstance(t, Zero):
+        return Zero()
+    elif isinstance(t, Succ):
+        return Succ(substC(i,r,t.k))
+    elif isinstance(t, NatElim):
+        m, mz, ms, k = (t.e1, t.e2, t.e3, t.e4)
+        return NatElim(substC(i,r,m),
+                       substC(i,r,mz),
+                       substC(i,r,ms),
+                       substC(i,r,k))
     raise TypeError(f"Unknown instance '{type(t)}'")
 
 def substC(i : int, r : TermI, t : TermC) -> TermC:
@@ -241,6 +319,12 @@ def quote(i : int, v : Value) -> TermC:
     elif isinstance(v, VPi):
         return Inf(Pi(quote(i,v.v),
                       quote(i+1, v.f(vfree(Quote(i))))))
+    elif isinstance(v, VNat):
+        return Inf(Nat())
+    elif isinstance(v, VZero):
+        return Inf(Zero())
+    elif isinstance(v, VSucc):
+        return Inf(Succ(quote(i,v.k)))
     raise TypeError(f"Unknown instance '{type(v)}'")
 
 def neutralQuote(i : int, n : Neutral) -> TermI:
@@ -312,3 +396,45 @@ print(f"type(apply35a)= {typeI0(env35, apply35a)}")
 apply35b = App(apply35a, free("False"))
 print(f"apply35b= {apply35b}")
 print(f"type(apply35b)= {typeI0(env35, apply35b)}")
+
+## > let plus = natElim (\_ -> Nat -> Nat)
+##                      (\n -> n)
+##                      (\k rec n -> Succ (rec n))
+## plus :: Pi (x :: Nat) (y :: Nat) . Nat
+
+plus : TLam[[TermC], TermI] = lambda x : NatElim(
+        pi(Inf(Nat()),Inf(Nat())),
+        Lam (Inf (Bound(0))),
+        Lam(
+          Lam(
+            Lam(
+              Inf(
+                App(Succ (Inf (Bound (1))), Inf (Bound(0))))
+              )
+            )
+        ),
+        x
+       )
+
+def int2nat(n : int) -> TermC:
+    if n == 0:
+        return Inf(Zero())
+    else:
+        return Inf(Succ(int2nat(n-1)))
+
+def nval2int(v : Value) -> int:
+    if isinstance(v, VZero):
+        return 0
+    elif isinstance(v, VSucc):
+        return 1 + nval2int(v.k)
+    raise TypeError(f"Unknown instance '{type(v)}'")
+
+## > plus 40 2
+## 42 :: Nat
+n40 = int2nat(40)
+n2  = int2nat(2)
+print(n2)
+n42 = nval2int(evalI(App(plus(n40),n2), []))
+print(n42)
+## > n42
+## 42
