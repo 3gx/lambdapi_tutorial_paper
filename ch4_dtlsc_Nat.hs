@@ -132,12 +132,12 @@ typeI i context (NatElim m mz ms k) =
 typeC :: Int -> Context -> TermC -> Type -> Result ()
 typeC i context (Inf e) v
   = do v' <- typeI i context e
-       unless (quote0 v == quote0 v') (throwError "type mismatch")
+       unless (quote0 v == quote0 v') (throwError "[inf] type mismatch")
 typeC i context (Lam e) (VPi t t')
   = typeC (i+1) ((Local i, t) : context)
                 (substC 0 (Free (Local i)) e) (t' (vfree (Local i)))
 typeC i context _ _
-  = throwError "type mismatch"
+  = throwError "oops .. type mismatch"
 
 substI :: Int -> TermI -> TermI -> TermI
 substI i r (Ann e t) = Ann (substC i r e) t
@@ -256,6 +256,35 @@ e35 = (Ann
       )
 -- > evalI e35 []
 -- > Lam (Lam (Inf (Bound 0)))
+
+e35' = (Ann
+        (Lam
+          (Lam $ Inf (Bound 0))
+        )
+        (pi'
+          (Inf Star)
+          (pi'
+            (Inf (Bound 1))
+            (Inf (Bound 1))
+          )
+        )
+      )
+
+e35a = (Ann
+        (Lam $ Inf (Bound 0))
+        (pi'
+          (free "a")
+          (free "a")
+        )
+      )
+
+e35b = (Ann
+        (Lam $ Inf (Bound 0))
+        (pi'
+          (Inf Star)
+          (Inf Star)
+        )
+      )
 
 env35 :: Context
 env35 = [(Global "Bool", VStar),

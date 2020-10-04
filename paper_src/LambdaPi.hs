@@ -15,7 +15,7 @@
   import Text.ParserCombinators.Parsec.Token
   import Text.ParserCombinators.Parsec.Language
 {-# LINE 171 "LP.lhs" #-}
-  import System.Console.Readline
+--  import System.Console.Readline
   import System.IO hiding (print)
 {-# LINE 176 "LP.lhs" #-}
   putstrln x = putStrLn x

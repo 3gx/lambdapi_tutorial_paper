@@ -91,13 +91,13 @@ typeI i context (e :@: e')
 typeC :: Int -> Context -> TermC -> Type -> Result ()
 typeC i context (Inf e) t
   = do t' <- typeI i context e
-       unless (t == t') (throwError "type mismatch")
+       unless (t == t') (throwError "[inf] type mismatch")
 
 typeC i context (Lam e) (Fun t t')
   = typeC (i+1) ((Local i, HasType t) : context)
                 (substC 0 (Free (Local i)) e) t'
 typeC i context _ _
-  = throwError "type mismatch"
+  = throwError "oops type mismatch"
 
 substI :: Int -> TermI -> TermI -> TermI
 substI i r (Ann e t) = Ann (substC i r e) t
