@@ -146,6 +146,14 @@ substI i r (Pi t t') = Pi (substC i r t) (substC (i+1) r t')
 substI i r (Bound j) = if i==j then r else Bound j
 substI i r (Free y) = Free y
 substI i r (e :@: e') = substI i r e :@: substC i r e'
+substI i r Nat = Nat
+substI i r (NatElim m mz ms n)
+  = NatElim (substC i r m)
+            (substC i r mz)
+            (substC i r ms)
+            (substC i r n)
+substI i r Zero = Zero
+substI i r (Succ n) = Succ (substC i r n)
 
 substC :: Int -> TermI -> TermC -> TermC
 substC i r (Inf e) = Inf (substI i r e)
@@ -285,5 +293,50 @@ apply35b = apply35a :@: (free "False")
 -- plus :: Pi (x :: Nat) (y :: Nat) . Nat
 -- > plus 40 2
 -- 42 :: Nat
+
+plus = NatElim
+        (Lam (pi' (Inf Nat) (Inf Nat)))
+        (Lam (Inf (Bound 0)))
+        (Lam
+          (Lam
+            (Lam
+              (Inf
+                (Succ (Inf ((Bound 1) :@: (Inf (Bound 0)))))
+              )
+            )
+          )
+        )
+plus2 = plus (Inf (Succ (Inf (Succ (Inf Zero)))))
+three = plus2 :@: (Inf (Succ (Inf Zero)))
+five = plus2 :@: (Inf three)
+-- > evalI three []
+-- Inf (Succ (Inf (Succ (Inf (Succ (Inf Zero))))))
+-- > typeI0 [] three
+-- Right Inf Nat
+-- > evalI five []
+-- Inf (Succ (Inf (Succ (Inf (Succ (Inf (Succ (Inf (Succ (Inf Zero))))))))))
+-- > typeI0 [] five
+-- Right Inf Nat
+plus5 = plus (Inf five)
+eight = plus5 :@: (Inf three)
+-- > evalI eight []
+-- Inf (Succ (Inf (Succ (Inf (Succ (Inf (Succ (Inf (Succ (Inf (Succ (Inf (Succ (Inf (Succ (Inf Zero))))))))))))))))
+-- > typeI0 [] eight
+-- Right Inf Nat
+
+-- proof: 1+1 = 2
+one = (Succ (Inf Zero))
+two = plus (Inf one) :@: (Inf one)
+-- > evalI two []
+-- Inf (Succ (Inf (Succ (Inf Zero))))
+-- > typeI0 [] two
+-- Right Inf Nat
+
+-- proof : 2+2 = 4
+four = plus (Inf two) :@: (Inf two)
+-- > evalI four []
+-- Inf (Succ (Inf (Succ (Inf (Succ (Inf (Succ (Inf Zero))))))))
+-- > typeI0 [] four
+-- Right Inf Nat
 
 
