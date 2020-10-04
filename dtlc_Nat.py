@@ -62,6 +62,8 @@ class Zero(TermI):
 @dataclass(**_dc_attrs)
 class Succ(TermI):
     k : TermC
+    def __repr__(self) -> str:
+        return f"(Succ {self.k})"
 
 
 @dataclass(**_dc_attrs)
@@ -432,9 +434,10 @@ def nval2int(v : Value) -> int:
 ## > plus 40 2
 ## 42 :: Nat
 n40 = int2nat(40)
+print(n40)
 n2  = int2nat(2)
 print(n2)
-n42 = nval2int(evalI(App(plus(n40),n2), []))
-print(n42)
+#n42 = nval2int(evalI(App(plus(n40),n2), []))
+#print(n42)
 ## > n42
 ## 42
