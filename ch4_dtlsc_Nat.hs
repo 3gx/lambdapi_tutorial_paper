@@ -183,6 +183,8 @@ id' = Lam (Inf (Bound 0))
 const' = Lam (Lam (Inf (Bound 1)))
 free x = Inf (Free (Global x))
 pi' x y = Inf (Pi x y)
+star = Inf Star
+ann x y = Inf (Ann x y)
 term1 = (Ann id' (Inf (Pi (free "a") (free "a"))) ) :@: (free "y")
 term2 = ((Ann const' (pi' (pi' (free "b") (free "b"))
                          (pi' (free "a")
@@ -202,7 +204,7 @@ env2 = [(Global "b", VStar)] ++ env1
 
 e1 = quote0 (evalI term1 [])
 -- > e1
--- Inf (Free (Global "y"))
+-- Inf (Free (Global "y")) 
 
 e2 = quote0 (evalI term2 [])
 -- > e2
@@ -236,5 +238,31 @@ e5 = quote0 (VLam $ \x->
 -- > Lam (Lam (Inf (Free (Global "y") :@: Inf (Free (Global "x")))))
 --
 e6 = Lam (Lam (Inf ((Bound 0) :@: (Inf (Bound 1)))))
+
+e35 = (Ann
+        (Lam
+          (Lam $ Inf (Bound 0))
+        )
+        (pi'
+          (ann (free "a") star)
+          (pi'
+            (ann
+              (free "_")
+              (free "a")
+            )
+            (free "a")
+          )
+        )
+      )
+-- > evalI e35 []
+-- > Lam (Lam (Inf (Bound 0)))
+
+env35 :: Context
+env35 = [(Global "Bool", VStar),
+         (Global "False", VNeutral (NFree (Global "Bool")))]
+apply35 = e35 :@: (free "Bool")
+-- > evalI apply35 []
+
+
 
 
