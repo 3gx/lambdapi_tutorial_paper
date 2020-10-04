@@ -428,3 +428,19 @@ four = plus (Inf two) :@: (Inf two)
 -- > typeI0 [] four
 -- Right Inf Nat
 
+
+-- example from 4.2
+-- ##################
+-- > let append =
+-- >   (\a -> vecElim a
+--                    (\m _ -> Pi (n :: Nat) . Vec a n -> Vec a (plus m n))
+--                    (\_ v -> v)
+--                    (\m v vs rec n w -> Cons a (plus m n) v (rec n w)))
+-- append :: Pi (a :: *) (m :: Nat) (v :: Vec a m) (n :: Nat) (w :: Vec a n) .
+--           Vec a (plus m n)
+
+-- > assume (a :: *) (x :: a) (y :: a)
+-- > append a 2 (Cons a 1 x (Cons a 0 x (Nil a)))
+--            1 (Cons a 0 y (Nil a))
+-- Cons a 2 x (Cons a 1 x (Cons a 0 y (Nil a))) :: Vec a 3
+
