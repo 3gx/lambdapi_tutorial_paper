@@ -84,12 +84,15 @@ class Quote(Name):
 class Value:
     def __repr__(self) -> str:
         return f"{quote0(self)}"
+VFunT = TLam[[Value], Value]
+@dataclass(**dc_attrs)
 class VLam(Value):
-    __slots__ = ['f']
-    def __init__(self, lam : TLam[[Value], Value]):
-        self.f = lam
-    def __eq__(self ,other :object) -> bool:
-        assert False, "not comparable objects"
+    f_ : VFunT
+    @property  # workaround for dataclasses messing up function type
+    def f(self) -> VFunT:
+        return ty.cast(VFunT, self.f_)
+    def __repr__(self) -> str:
+        return super().__repr__()
 @dataclass(**dc_attrs)
 class VNeutral(Value):
     n : Neutral
@@ -99,13 +102,15 @@ class VNeutral(Value):
 class VStar(Value):
     def __repr__(self) -> str:
         return super().__repr__()
+@dataclass(**dc_attrs)
 class VPi(Value):
-    __slots__ = ['v', 'f']
-    def __init__(self, v : Value, f : TLam[[Value], Value]):
-        self.v = v
-        self.f = f
-    def __eq__(self ,other :object) -> bool:
-        assert False, "not comparable objects"
+    v : Value
+    f_ : VFunT
+    @property
+    def f(self) -> VFunT:
+        return ty.cast(VFunT, self.f_)
+    def __repr__(self) -> str:
+        return super().__repr__()
 
 @dataclass(**dc_attrs)
 class Neutral:
