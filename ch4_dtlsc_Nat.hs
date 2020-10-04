@@ -208,19 +208,19 @@ e1 = quote0 (evalI term1 [])
 
 e2 = quote0 (evalI term2 [])
 -- > e2
--- > Lam (Inf (Bound 0))
+-- Lam (Inf (Bound 0))
 --
 e2' = quote0 (evalI term2' [])
 -- > e2'
--- > Int (Free (Global "y"))
+-- Int (Free (Global "y"))
 
 e3 = typeI0 env1 term1
 -- > e3
--- > Right Inf (Free (Global "a"))
+-- Right Inf (Free (Global "a"))
 
 e4 = typeI0 env2 term2
 -- > e4
--- > Right Inf (Pi (Inf (Free (Global "b"))) (Inf (Free (Global "b"))))
+-- Right Inf (Pi (Inf (Free (Global "b"))) (Inf (Free (Global "b"))))
 
 -- \x -> \y -> y x
 e5 = quote0 (VLam $ \x->
@@ -235,29 +235,11 @@ e5 = quote0 (VLam $ \x->
               )
             )
 -- > e5
--- > Lam (Lam (Inf (Free (Global "y") :@: Inf (Free (Global "x")))))
---
-e6 = Lam (Lam (Inf ((Bound 0) :@: (Inf (Bound 1)))))
+-- Lam (Lam (Inf (Free (Global "y") :@: Inf (Free (Global "x")))))
 
-{-
-e35 = (Ann
-        (Lam
-          (Lam $ Inf (Bound 0))
-        )
-        (pi'
-          (ann (free "a") star)
-          (pi'
-            (ann
-              (free "_")
-              (free "a")
-            )
-            (free "a")
-          )
-        )
-      )
--}
--- > evalI e35 []
--- > Lam (Lam (Inf (Bound 0)))
+e6 = Lam (Lam (Inf ((Bound 0) :@: (Inf (Bound 1)))))
+-- > e6
+-- Lam (Lam (Inf (Bound 0 :@: Inf (Bound 1))))
 
 e35 = (Ann
         (Lam
@@ -275,16 +257,27 @@ e35 = (Ann
 env35 :: Context
 env35 = [(Global "Bool", VStar),
          (Global "False", VNeutral (NFree (Global "Bool")))]
+-- > typeI0 env35 e35
+-- Right Inf (Pi (Inf Star) (Inf (Pi (Inf (Bound 0)) (Inf (Bound 1)))))
+
+
 apply35a = e35 :@: (free "Bool")
+-- > typeI0 env35 apply35a
+-- Right Inf (Pi (Inf (Free (Global "Bool"))) (Inf (Free (Global "Bool"))))
+
 apply35b = apply35a :@: (free "False")
+-- > typeI0 env35 apply35b
+-- Right Inf (Free (Global "Bool"))
+
+
 -- > evalI apply35a []
--- > Lam (Inf (Bound 0))
+-- Lam (Inf (Bound 0))
 -- > evalI apply35b []
--- > Inf (Free (Global "False"))
+-- Inf (Free (Global "False"))
 -- > typeI0 env35 $ Free (Global "False")
--- > Right Inf (Free (Global "Bool"))
+-- Right Inf (Free (Global "Bool"))
 -- > typeI0 env35 $ Free (Global "Bool")
--- > Right Inf Star
+-- Right Inf Star
 
 
 
