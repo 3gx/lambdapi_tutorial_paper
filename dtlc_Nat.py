@@ -251,7 +251,7 @@ def typeI(i : int, c : Context, term : TermI) -> Type:
         typeC(i,c,ms,
                 VPi(VNat(),
                     lambda l : VPi(vapp(mVal,l),
-                            lambda _ : vapp(mVal, VSucc(l)))))
+                                   lambda _ : vapp(mVal, VSucc(l)))))
         typeC(i, c, k, VNat())
         kVal = evalC(k, [])
         return vapp(mVal, kVal)
@@ -283,7 +283,7 @@ def substI(i : int, r : TermI, t : TermI) -> TermI:
     elif isinstance(t, Free):
         return t
     elif isinstance(t, App):
-        return substI(i, r, App(t.e1, substC(i,r,t.e2)))
+        return App(substI(i,r,t.e1), substC(i,r,t.e2))
     elif isinstance(t, Star):
         return Star()
     elif isinstance(t, Pi):
@@ -407,15 +407,16 @@ print(f"type(apply35b)= {typeI0(env35, apply35b)}")
 ## plus :: Pi (x :: Nat) (y :: Nat) . Nat
 
 plus : TLam[[TermC], TermI] = lambda x : NatElim(
-        pi(Inf(Nat()),Inf(Nat())),
-        Lam (Inf (Bound(0))),
+        Lam(pi(Inf(Nat()),Inf(Nat()))),
+        Lam(Inf(Bound(0))),
         Lam(
           Lam(
             Lam(
               Inf(
-                App(Succ (Inf (Bound (1))), Inf (Bound(0))))
+                Succ (Inf (App(Bound(1), Inf(Bound(0)))))
               )
             )
+          )
         ),
         x
        )
@@ -441,7 +442,7 @@ n2  = int2nat(2)
 print("n2=", n2)
 print("type(n40)=", typeI0({},ty.cast(Inf,n40).e))
 print("type(plus(n40))=", typeI0({},plus(n40)))
-#n42 = nval2int(evalI(App(plus(n40),n2), []))
-#print(n42)
+n42 = nval2int(evalI(App(plus(n40),n2), []))
+print(n42)
 ## > n42
 ## 42
