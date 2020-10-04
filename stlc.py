@@ -77,6 +77,11 @@ class Global(Name):
         self.str = str_
     def __repr__(self) -> str:
         return f"(Global {self.str})"
+    def __eq__(self, other : Global) -> bool: # type: ignore
+        assert(isinstance(other, Global))
+        return self.str == other.str
+    def __hash__(self) -> TAny:
+        return self.str.__hash__()
 
 class Local(Name):
     __slots__ = ['i']
@@ -84,13 +89,23 @@ class Local(Name):
         self.i = pos
     def __repr__(self) -> str:
         return f"(Local {self.i})"
+    def __eq__(self, other : Local) -> bool: # type: ignore
+        assert(isinstance(other, Local))
+        return self.i == other.i
+    def __hash__(self) -> TAny:
+        return self.i.__hash__()
 
 class Quote(Name):
-    __slots__ = ['pos']
+    __slots__ = ['i']
     def __init__(self, pos : int):
-        self.pos = pos
+        self.i = pos
     def __repr__(self) -> str:
-        return f"(Quote {self.pos})"
+        return f"(Quote {self.i})"
+    def __eq__(self, other : Quote) -> bool: # type: ignore
+        assert(isinstance(other, Quote))
+        return self.i == other.i
+    def __hash__(self) -> TAny:
+        return self.i.__hash__()
 
 @abstract
 class Type: __slots__ = ['_']
@@ -101,17 +116,23 @@ class TFree(Type):
         self.x = name
     def __repr__(self) -> str:
         return f"(TFree {self.x})"
+    def __eq__(self, other : TFree) -> bool: # type: ignore
+        assert(isinstance(other, TFree))
+        return self.x == other.x
 
 class Fun(Type):
-    __slots__ = ['k','kp']
+    __slots__ = ['t','tp']
     def __init__(self, typePrm : Type, typeRes : Type):
         self.t = typePrm
         self.tp = typeRes
     def __repr__(self) -> str:
-        return f"{self.t} -> {self.tp}"
+        return f"(Fun {self.t} {self.tp})"
+    def __eq__(self, other : Fun) -> bool: # type: ignore
+        assert(isinstance(other, Fun))
+        return self.t == other.tp and self.tp == other.tp
 
 @abstract
-class Value: pass
+class Value: __slots__=['_']
 
 class VLam(Value):
     __slots__ = ['f']
@@ -128,21 +149,21 @@ class VNeutral(Value):
         return f"(VNeutral {self.n})"
 
 @abstract
-class Neutral: pass
+class Neutral: __slots__ = ['_']
 
 class NFree(Neutral):
-    __slots__ = ['name']
+    __slots__ = ['x']
     def __init__(self, name : Name):
         self.x = name
     def __repr__(self) -> str:
-        return f"(NFree self.x)"
+        return f"(NFree {self.x})"
 class NApp(Neutral):
     __slots__ = ['n', 'v']
     def __init__(self, neutral : Neutral, value : Value):
         self.n = neutral
-        self.v = neutral
+        self.v = value
     def __repr__(self) -> str:
-        return f"(NApp self.n self.v)"
+        return f"(NApp {self.n} {self.v})"
 
 vfree : TLam[[Name],Value] = lambda n :  VNeutral(NFree(n))
 
@@ -175,14 +196,14 @@ def evalC(term : TermC, env : Env) -> Value:
     raise TypeError(f"Unknown instance '{type(term)}'")
 
 @abstract
-class Kind: pass
+class Kind: __slots__ = ['_']
 class Star(Kind):
     __slots__ = ['_']
     def __repr__(self) -> str:
         return f"Star"
 
 @abstract
-class Info: pass
+class Info: __slots__ = ['_']
 class HasKind(Info):
     __slots__ = ['kind']
     def __init__(self, kind : Kind):
@@ -208,19 +229,28 @@ def kindC(c : Context, term : Type, k : Kind) -> None:
     elif isinstance(term, Fun):
         kindC(c, term.t, Star())
         kindC(c, term.tp, Star())
+        return
     raise TypeError(f"Unknown instance '{type(term)}'")
+
+def typeI0(c : Context, term : TermI) -> Type:
+    return typeI(0, c, term)
 
 def typeI(i : int, c : Context, term : TermI) -> Type:
     if isinstance(term, Ann):
         kindC(c, term.t, Star())
         typeC(i, c, term.e, term.t)
         return term.t
-    elif isinstance(term, TFree):
+    elif isinstance(term, Free):
         info = c[term.x]
         if isinstance(info, HasType):
             return info.t
         else:
             raise RuntimeError(f"unknown type identifier '{term.x}'")
+    elif isinstance(term, App):
+        f = typeI(i, c, term.e)
+        if isinstance(f, Fun):
+            typeC(i, c, term.ep, f.t)
+            return f.tp
     raise TypeError(f"Unknown instance '{type(term)}'")
 
 def dict_merge(a : TDict[TAny, TAny],
@@ -238,5 +268,69 @@ def typeC(i : int, c: Context, term : TermC, ty : Type) -> None:
     elif isinstance(term, Lam) and isinstance(ty, Fun):
         typeC(i+1, dict_merge({Local(i): HasType(ty.t)}, c),
                    substC(0, Free(Local(i)), term.e), ty.tp)
-    raise TypeError(f"Type misamtch: term={term}', type={type}")
+        return
+    raise TypeError(f"Type mismatch: term={term}', type={type}")
 
+def substI(i : int, r : TermI, t : TermI) -> TermI:
+    if isinstance(t, Ann):
+        return Ann(substC(i,r,t.e), t.t)
+    elif isinstance(t, Bound):
+        return r if i == t.i else t
+    elif isinstance(t, Free):
+        return t
+    elif isinstance(t, App):
+        return substI(i, r, App(t.e, substC(i,r,t.ep)))
+    raise TypeError(f"Unknown instance '{type(t)}'")
+
+def substC(i : int, r : TermI, t : TermC) -> TermC:
+    if isinstance(t, Inf):
+        return Inf(substI(i,r,t.i))
+    elif isinstance(t, Lam):
+        return Lam(substC(i+1, r, t.e))
+    raise TypeError(f"Unknown instance '{type(t)}'")
+
+def quote0(v : Value) -> TermC:
+    return quote(0,v)
+
+def quote(i : int, v : Value) -> TermC:
+    if isinstance(v, VLam):
+        return Lam(quote(i+1, v.f(vfree(Quote(i)))))
+    elif isinstance(v, VNeutral):
+        return Inf(neutralQuote(i,v.n))
+    raise TypeError(f"Unknown instance '{type(v)}'")
+
+def neutralQuote(i : int, n : Neutral) -> TermI:
+    if isinstance(n, NFree):
+        return boundfree(i,n.x)
+    elif isinstance(n, NApp):
+        return App(neutralQuote(i, n.n), quote(i,n.v))
+    raise TypeError(f"Unknown instance '{type(n)}'")
+
+def boundfree(i : int, x : Name) -> TermI:
+    if isinstance(x, Quote):
+        return Bound(i-x.i-1)
+    else:
+        return Free(x)
+
+e0 = quote0 (VLam (lambda x : VLam (lambda y : x)))
+print(e0)
+
+id_ = Lam (Inf (Bound(0)))
+const_ = Lam (Lam (Inf (Bound(1))))
+tfree : TLam[[str], TFree] = lambda a : TFree (Global(a))
+free : TLam[[str],Inf] = lambda x : Inf (Free (Global(x)))
+term1 = App(Ann(id_,(Fun (tfree("a"),tfree("a")))), free("y"))
+term2 = App(App(Ann(const_,Fun (Fun(tfree("b"),tfree("b")),
+                   (Fun (tfree("a"),
+                        (Fun (tfree("b"),tfree("b"))))))),
+        id_), free("y"))
+env1 : Context = {Global("y"): HasType(tfree("a")),
+                  Global("a"): HasKind(Star())}
+env2 = env1.copy()
+env2.update({Global("b"): HasKind(Star())})
+
+print(evalI(term1, []))
+print(quote0(evalI(term1, [])))
+print(quote0(evalI(term2, [])))
+print(typeI0(env1, term1))
+print(typeI0(env2, term2))
