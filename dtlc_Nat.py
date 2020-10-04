@@ -14,6 +14,10 @@ def abstract(cls : AbstractF) -> TAny:
             super().__init__(*args ,**kwargs)
     return Abstract
 
+import dataclasses
+dataclass : TLam[[TAny], TAny] = \
+        lambda cls : dc.dataclass(cls, frozen=True, unsafe_hash=True) # type: ignore
+
 @abstract
 class TermI:
     __slots__ = ['_']
