@@ -7,7 +7,7 @@ from typing import Any as TAny, Callable as TLam, List as TList, \
 
 from dataclasses import dataclass
 
-dc_attrs = {"frozen": True}
+_dc_attrs = {"frozen": True}
 
 
 # --start-of-war--  mypy issue: https://github.com/python/mypy/issues/5485
@@ -20,97 +20,97 @@ class Box(TGeneric[_BoxT]):
         return self.inner
 # --end-of-war--
 
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class TermI:
     pass
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class Ann(TermI):
     e1 : TermC
     e2 : TermC
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class Star(TermI):
     def __repr__(self) -> str:
         return f"*"
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class Pi(TermI):
     e1 : TermC
     e2 : TermC
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class Bound(TermI):
     i : int
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class Free(TermI):
     x : Name
     def __repr__(self) -> str:
         return f"{self.x}"
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class App(TermI):
     e1 : TermI
     e2 : TermC
 
 
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class TermC:
     pass
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class Inf(TermC):
     e : TermI
     def __repr__(self) -> str:
         return f"{self.e}"
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class Lam(TermC):
     e : TermC
 
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class Name():
     pass
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class Global(Name):
     str_ : str
     def __repr__(self) -> str:
         return f"(Global {self.str_})"
 
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class Local(Name):
     i : int
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class Quote(Name):
     i : int
 
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class Value:
     def __repr__(self) -> str:
         return f"{quote0(self)}"
 _VFunT0 = TLam[[Value], Value]
 _VFunT = TUnion[Box[_VFunT0], _VFunT0]
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class VLam(Value):
     f : _VFunT
     def __repr__(self) -> str:
         return super().__repr__()
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class VNeutral(Value):
     n : Neutral
     def __repr__(self) -> str:
         return super().__repr__()
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class VStar(Value):
     def __repr__(self) -> str:
         return super().__repr__()
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class VPi(Value):
     v : Value
     f : _VFunT
     def __repr__(self) -> str:
         return super().__repr__()
 
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class Neutral:
     pass
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class NFree(Neutral):
     x : Name
-@dataclass(**dc_attrs)
+@dataclass(**_dc_attrs)
 class NApp(Neutral):
     n : Neutral
     v : Value
