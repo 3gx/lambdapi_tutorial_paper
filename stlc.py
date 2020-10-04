@@ -292,6 +292,55 @@ def substC(i : int, r : TermI, t : TermC) -> TermC:
 def quote0(v : Value) -> TermC:
     return quote(0,v)
 
+
+"""
+--------------------------------------------------
+@claim
+def quote1(_1 : int, _2 : Value) -> TermC: pass
+
+generates:
+quote1__dict = dict()
+def quote1(_1 : int, _2 : Value) -> TermC:
+    assert(isinstance(_1,int))
+    assert(isinstance(_2,Value))
+    quote1__args = (int, Value)
+    return quote1_dict["_1__{int.__name__},
+                        _2__{Value.__name__}"](_1, _2)
+
+-----------------------------------------------------
+
+@define
+def quote1(i, _1 : VLam(f)):
+    return Lam(quote(i+1, f(vfree(Quote(i)))))
+
+generates
+
+quote1__dict.update(f"_1__{int.__name__},
+                      _2__{VLam.__name__}":quote1__VLam)
+def quote1__VLam(_1 : int, _2 : VLam) -> TermC:
+    assert(isinstance(_2, VLam))
+    i = _1
+    f = _2.expr
+    return Lam(quote(i+1, f(vfree(Quote(i)))))
+
+-------------------------------------------
+
+@match
+def quote1(i, _ : VNeutral(n)):
+    return Inf(neutralQuote(i,n))
+
+generates
+
+quote1__dict.update(f"_1__{int.__name__},
+                      _2__{NVeutral.__name__}":quote1__VNeutral)
+
+def quote1__VNeutral(_1 : int, _2 : VNeutral) -> TermC:
+    assert(isinstancE(_2, VNeutral))
+    i = _1
+    n = _2.neutral
+    return Inf(Neutral(i,n))
+"""
+
 def quote(i : int, v : Value) -> TermC:
     if isinstance(v, VLam):
         return Lam(quote(i+1, v.f(vfree(Quote(i)))))
