@@ -122,13 +122,17 @@ class VPi(Value):
         return super().__repr__()
 @dataclass(**_dc_attrs)
 class VNat(Value):
-    pass
+    def __repr__(self) -> str:
+        return super().__repr__()
 @dataclass(**_dc_attrs)
 class VZero(Value):
-    pass
+    def __repr__(self) -> str:
+        return super().__repr__()
 @dataclass(**_dc_attrs)
 class VSucc(Value):
     k : Value
+    def __repr__(self) -> str:
+        return super().__repr__()
 
 
 @dataclass(**_dc_attrs)
@@ -179,7 +183,7 @@ def evalI(term : TermI, env : Env) -> Value:
         msVal = evalC(ms, env)
         def rec(kVal : Value) -> Value:
             if isinstance(kVal, VZero):
-                return VZero()
+                return mzVal
             elif isinstance(kVal, VSucc):
                 return vapp(vapp(msVal, kVal.k), rec(kVal.k))
             elif isinstance(kVal, VNeutral):
@@ -444,8 +448,9 @@ print("type(n40)=", typeI0({},ty.cast(Inf,n40).e))
 print("type(plus(n40))=", typeI0({},plus(n40)))
 n42term = App(plus(n40),n2)
 print("type(n42term)=", typeI0({}, n42term))
-n42 = evalI(n42term, [])
-#n42 = nval2int(evalI(App(plus(n40),n2), []))
-#print(n42)
+n42v = evalI(n42term, [])
+print("n42v=", n42v)
+n42 = nval2int(n42v)
+print("n42=", n42)
 ## > n42
 ## 42
