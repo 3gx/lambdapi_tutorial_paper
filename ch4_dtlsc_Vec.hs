@@ -11,6 +11,10 @@ data TermI = Ann TermC TermC
            | NatElim TermC TermC TermC TermC
            | Zero
            | Succ TermC
+           | Vec TermC TermC
+           | Nil TermC
+           | Cons TermC TermC TermC TermC
+           | VecElim TermC TermC TermC TermC TermC TermC
        deriving (Show,Eq)
 
 data TermC = Inf TermI
@@ -29,6 +33,9 @@ data Value = VLam (Value -> Value)
            | VNat
            | VZero
            | VSucc Value
+           | VNil Value
+           | VCons Value Value Value Value
+           | VVec Value Value
 
 instance Show Value where
   show x = show (quote0 x)
@@ -36,6 +43,7 @@ instance Show Value where
 data Neutral = NFree Name
              | NApp Neutral Value
              | NNatElim Value Value Value Neutral
+             | NVecElim Value Value Value Value Value Neutral
         deriving Show
 
 
@@ -69,6 +77,21 @@ evalI (NatElim m mz ms k) d
                           (NNatElim (evalC m d) mzVal msVal k)
             _ -> error "internal: eval natElim"
     in rec (evalC k d)
+evalI (Vec a n) d = VVec (evalC a d) (evalC n d)
+evalI (VecElim a m mn mc n xs) d
+  = let mnVal = evalC mn d
+        mcVal = evalC mc d
+        rec nVal xsVal =
+          case xsVal of
+            VNil _ -> mnVal
+            VCons _ l x xs -> foldl vapp mcVal [l, x, xs, rec l xs]
+            VNeutral n -> VNeutral (NVecElim (evalC a d)( evalC m d)
+                                             mnVal mcVal nVal n)
+            _ -> error "internal: eval vecEim"
+    in rec (evalC n d) (evalC xs d)
+evalI (Nil a) d = VNil (evalC a d)
+evalI (Cons a n x xs) d = VCons (evalC a d) (evalC n d)
+                                (evalC x d) (evalC xs d)
 
 vapp :: Value -> Value -> Value
 vapp (VLam f) v = f v
@@ -127,7 +150,40 @@ typeI i context (NatElim m mz ms k) =
      typeC i context k VNat
      let kVal = evalC k []
      return (mVal `vapp` kVal)
-
+typeI i g (Vec a k)
+  = do typeC i g a VStar
+       typeC i g k VNat
+       return VStar
+typeI i g (Nil a)
+  = do typeC i g a VStar
+       let aVal = evalC a []
+       return (VVec aVal VZero)
+typeI i g (Cons a k x xs)
+  = do typeC i g a VStar
+       let aVal = evalC a []
+       typeC i g k VNat
+       let kVal = evalC k []
+       typeC i g x aVal
+       typeC i g xs (VVec aVal kVal)
+       return (VVec aVal (VSucc kVal))
+typeI i g (VecElim a m mn mc k vs)
+  = do typeC i g a VStar
+       let aVal = evalC a []
+       typeC i g m
+          (VPi VNat (\k -> VPi (VVec aVal k) (\_ -> VStar)))
+       let mVal = evalC m []
+       typeC i g mn (foldl vapp mVal [VZero, VNil aVal])
+       typeC i g mc
+          (VPi VNat (\l ->
+            VPi aVal (\y ->
+              VPi (VVec aVal l) (\ys ->
+                VPi (foldl vapp mVal [l,ys]) (\_ ->
+                  (foldl vapp mVal [VSucc l, VCons aVal l y ys]))))))
+       typeC i g k VNat
+       let kVal = evalC k []
+       typeC i g vs (VVec aVal kVal)
+       let vsVal = evalC vs []
+       return (foldl vapp mVal [kVal, vsVal])
 
 typeC :: Int -> Context -> TermC -> Type -> Result ()
 typeC i context (Inf e) v
@@ -154,6 +210,15 @@ substI i r (NatElim m mz ms n)
             (substC i r n)
 substI i r Zero = Zero
 substI i r (Succ n) = Succ (substC i r n)
+substI i r (Vec a n) = Vec (substC i r a) (substC i r n)
+substI i r (VecElim a m mn mc n xs)
+  = VecElim (substC i r a) (substC i r m)
+            (substC i r mn) (substC i r mc)
+            (substC i r n) (substC i r xs)
+substI i r (Nil a) = Nil (substC i r a)
+substI i r (Cons a n x xs)
+  = Cons (substC i r a) (substC i r n)
+         (substC i r x) (substC i r xs)
 
 substC :: Int -> TermI -> TermC -> TermC
 substC i r (Inf e) = Inf (substI i r e)
