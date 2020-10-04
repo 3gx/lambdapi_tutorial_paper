@@ -249,6 +249,9 @@ e6 = Lam (Lam (Inf ((Bound 0) :@: (Inf (Bound 1)))))
 -- > e6
 -- Lam (Lam (Inf (Bound 0 :@: Inf (Bound 1))))
 
+-- example for the following concrete syntax
+-- > let id = (\a x -> x) :: Pi (a :: *).a -> a
+-- id :: Pi (x::*) (y::x).x
 e35 = (Ann
         (Lam
           (Lam $ Inf (Bound 0))
@@ -262,17 +265,21 @@ e35 = (Ann
         )
       )
 
+-- > assume (Bool :: *) (False :: Bool)
 env35 :: Context
 env35 = [(Global "Bool", VStar),
          (Global "False", VNeutral (NFree (Global "Bool")))]
 -- > typeI0 env35 e35
 -- Right Inf (Pi (Inf Star) (Inf (Pi (Inf (Bound 0)) (Inf (Bound 1)))))
 
-
+-- > id Bool
+-- \x -> x :: Pi x :: Bool. Bool
 apply35a = e35 :@: (free "Bool")
 -- > typeI0 env35 apply35a
 -- Right Inf (Pi (Inf (Free (Global "Bool"))) (Inf (Free (Global "Bool"))))
 
+-- > id Bool False
+-- False :: Bool
 apply35b = apply35a :@: (free "False")
 -- > typeI0 env35 apply35b
 -- Right Inf (Free (Global "Bool"))
@@ -287,12 +294,12 @@ apply35b = apply35a :@: (free "False")
 -- > typeI0 env35 $ Free (Global "Bool")
 -- Right Inf Star
 
+-- below is example for the following concrete syntax
+-- ==================================================
 -- > let plus = natElim (\_ -> Nat -> Nat)
 --                      (\n -> n)
 --                      (\k rec n -> Succ (rec n))
 -- plus :: Pi (x :: Nat) (y :: Nat) . Nat
--- > plus 40 2
--- 42 :: Nat
 
 plus = NatElim
         (Lam (pi' (Inf Nat) (Inf Nat)))
@@ -314,6 +321,14 @@ int2nat n = Inf (Succ (int2nat (n-1)))
 nval2int :: Value -> Int
 nval2int VZero = 0
 nval2int (VSucc n) = 1 + (nval2int n)
+
+-- > plus 40 2
+-- 42 :: Nat
+n40 = int2nat 40
+n2  = int2nat 2
+n42 = nval2int (evalI (plus n40 :@: n2) [])
+-- > n42
+-- 42
 
 plus2 = plus (Inf (Succ (Inf (Succ (Inf Zero)))))
 three = plus2 :@: (Inf (Succ (Inf Zero)))
@@ -348,8 +363,3 @@ four = plus (Inf two) :@: (Inf two)
 -- > typeI0 [] four
 -- Right Inf Nat
 
-n40 = int2nat 40
-n2  = int2nat 2
-n42 = nval2int (evalI (plus n40 :@: n2) [])
--- > n42
--- 42
