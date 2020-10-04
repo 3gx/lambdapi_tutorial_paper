@@ -306,6 +306,15 @@ plus = NatElim
             )
           )
         )
+
+int2nat :: Int -> TermC
+int2nat 0 = Inf Zero
+int2nat n = Inf (Succ (int2nat (n-1)))
+
+nval2int :: Value -> Int
+nval2int VZero = 0
+nval2int (VSucc n) = 1 + (nval2int n)
+
 plus2 = plus (Inf (Succ (Inf (Succ (Inf Zero)))))
 three = plus2 :@: (Inf (Succ (Inf Zero)))
 five = plus2 :@: (Inf three)
@@ -339,4 +348,8 @@ four = plus (Inf two) :@: (Inf two)
 -- > typeI0 [] four
 -- Right Inf Nat
 
-
+n40 = int2nat 40
+n2  = int2nat 2
+n42 = nval2int (evalI (plus n40 :@: n2) [])
+-- > n42
+-- 42
