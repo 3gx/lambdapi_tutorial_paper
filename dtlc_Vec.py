@@ -10,9 +10,10 @@ from __future__ import annotations
 import typing as ty
 from typing import Any as TAny, Callable as TLam, List as TList, \
                    Dict as TDict, Union as TUnion, Type as TType, \
-                   TypeVar as TTypeVar, Generic as TGeneric
+                   TypeVar as TTypeVar, Generic as TGeneric, Tuple as TTuple
 import sys
 from dataclasses import dataclass
+import dataclasses as dc
 import functools
 from functools import reduce as fold
 #import operator
@@ -242,7 +243,9 @@ def evalI(term : TermI, env : Env) -> Value:
     elif isinstance(term, Succ):
         return VSucc(evalC(term.k, env))
     elif isinstance(term, NatElim):
-        m, mz, ms, k = (term.e1, term.e2, term.e3, term.e4)
+        def unpack(obj : TAny) -> TTuple[TAny, ...]:
+            return tuple(getattr(obj, field.name) for field in dc.fields(obj))
+        m, mz, ms, k = unpack(term)
         mzVal = evalC(mz, env)
         msVal = evalC(ms, env)
         def rec1(kVal : Value) -> Value:
