@@ -8,10 +8,10 @@
 
 from __future__ import annotations
 
-import typing as ty
 from typing import Any as TAny, Callable as TLam, List as TList, \
                    Dict as TDict, Union as TUnion, Type as TType, \
-                   TypeVar as TTypeVar, Generic as TGeneric, Tuple as TTuple
+                   TypeVar as TTypeVar, Generic as TGeneric, Tuple as TTuple, \
+                   cast as _cast
 import sys
 from dataclasses import dataclass
 import dataclasses as dc
@@ -402,20 +402,18 @@ def typeI(i : int, c : Context, term : TermI) -> Type:
         return fold(vapp, [kVal, vsVal], mVal)
     raise TypeError(f"Unknown instance '{type(term)}'")
 
-def typeC(i : int, c: Context, term : TermC, ty : Type) -> None:
+def typeC(i : int, c: Context, term : TermC, type_ : Type) -> None:
     check_argument_types()
-    e : TUnion[TermI, TermC]
     if isinstance(term, Inf):
-        e = term.e
-        v = ty
-        v1 = typeI(i, c, e)
-        if quote0(v) != quote0(v1):
-            raise TypeError(f"type mismatch: {quote0(v)} != {quote0(v1)}")
+        e, = _unpack(term)
+        v = type_
+        vp = typeI(i, c, e)
+        if quote0(v) != quote0(vp):
+            raise TypeError(f"type mismatch: {quote0(v)} != {quote0(vp)}")
         return
-    elif isinstance(term, Lam) and isinstance(ty,VPi):
-        e = term.e
-        t = ty.v
-        tp = ty.f
+    elif isinstance(term, Lam) and isinstance(type_,VPi):
+        e, = _unpack(term)
+        t, tp = _unpack(type_)
         typeC(i+1, dict_merge({Local(i): t}, c),
                    substC(0, Free(Local(i)), e), tp(vfree(Local(i))))
         return
@@ -632,7 +630,7 @@ n40 = int2nat(40)
 print("n40=", n40)
 n2  = int2nat(2)
 print("n2=", n2)
-print("type(n40)=", typeI0({},ty.cast(Inf,n40).e))
+print("type(n40)=", typeI0({},_cast(Inf,n40).e))
 print("type(plus(n40))=", typeI0({},plus(n40)))
 n42term = App(plus(n40),n2)
 print("type(n42term)=", typeI0({}, n42term))
@@ -653,7 +651,7 @@ class Infix1(object):
     def __init__(self, func : TUnion[TLam[[U],R], TLam[[T,U],R]]):
         self.func = func
     def __or__(self, other : U) -> R:
-        return ty.cast(TLam[[Infix.U],Infix.R],self.func)(other)
+        return _cast(TLam[[Infix.U],Infix.R],self.func)(other)
     def __ror__(self, other : T) -> Infix:
         return Infix(partial(self.func, other)) #type: ignore
 
@@ -666,7 +664,7 @@ class Infix(object):
     def __init__(self, func : TUnion[TLam[[TAny],TAny], TLam[[TAny,TAny],TAny]]):
         self.func = func
     def __or__(self, other : TAny) -> TAny:
-        return ty.cast(TLam[[TAny],TAny],self.func)(other)
+        return _cast(TLam[[TAny],TAny],self.func)(other)
     def __ror__(self, other : TAny) -> Infix:
         return Infix(partial(self.func, other)) 
 
