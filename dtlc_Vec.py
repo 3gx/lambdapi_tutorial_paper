@@ -561,7 +561,7 @@ plus : TLam[[TermC], TermI] = lambda x : NatElim(
         ),
         x
        )
-plusx = Pi(Inf(Nat()), Inf(NatElim(
+plusx = Ann(Lam(Inf(NatElim(
         Lam(pi(Inf(Nat()),Inf(Nat()))),
         Lam(Inf(Bound(0))),
         Lam(
@@ -574,7 +574,7 @@ plusx = Pi(Inf(Nat()), Inf(NatElim(
           )
         ),
         Inf(Bound(0))
-       )))
+       ))), pi(Inf(Nat()), pi(Inf(Nat()), Inf(Nat()))))
 print("type(plusx)=", typeI0({}, plusx))
 sys.exit(0)
 
