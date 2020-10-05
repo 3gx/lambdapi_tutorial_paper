@@ -40,7 +40,10 @@ class Box(TGeneric[_BoxT]):
         return self.inner
 # --end-of-war--
 
-@dataclass(**_dc_attrs)
+
+abstract = dataclass(frozen=True)
+
+@abstract
 class TermI:
     pass
 @dataclass(**_dc_attrs)
@@ -118,7 +121,7 @@ class VecElim(TermI):
     n : TermC
     xs : TermC
 
-@dataclass(**_dc_attrs)
+@abstract
 class TermC:
     pass
 @dataclass(**_dc_attrs)
@@ -130,7 +133,7 @@ class Inf(TermC):
 class Lam(TermC):
     e : TermC
 
-@dataclass(**_dc_attrs)
+@abstract
 class Name():
     pass
 @dataclass(**_dc_attrs)
@@ -146,7 +149,7 @@ class Local(Name):
 class Quote(Name):
     i : int
 
-@dataclass(**_dc_attrs)
+@abstract
 class Value:
     def __repr__(self) -> str:
         return f"{quote0(self)}"
@@ -200,7 +203,7 @@ class VVec(Value):
     n : Value
 
 
-@dataclass(**_dc_attrs)
+@abstract
 class Neutral:
     pass
 @dataclass(**_dc_attrs)
