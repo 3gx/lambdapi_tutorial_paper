@@ -584,7 +584,6 @@ plusx = Ann(Lam(Inf(NatElim(
         Inf(Bound(0))
        ))), pi(Inf(Nat()), pi(Inf(Nat()), Inf(Nat()))))
 print("type(plusx)=", typeI0({}, plusx))
-#sys.exit(0)
 
 def int2nat(n : int) -> TermC:
     if n == 0:
@@ -598,6 +597,9 @@ def nval2int(v : Value) -> int:
     elif isinstance(v, VSucc):
         return 1 + nval2int(v.k)
     raise TypeError(f"Unknown instance '{type(v)}'")
+
+print("2+2 ->", nval2int(evalI(App(App(plusx, int2nat(2)), int2nat(2)),[])))
+#sys.exit(0)
 
 ## > plus 40 2
 ## 42 :: Nat
