@@ -14,6 +14,7 @@ from typing import Any as TAny, Callable as TLam, List as TList, \
 import sys
 from dataclasses import dataclass
 import dataclasses as dc
+import typeguard
 import functools
 from functools import reduce as fold
 #import operator
@@ -21,6 +22,13 @@ from functools import reduce as fold
 
 _dc_attrs = {"frozen": True}
 
+check_types = True
+#check_types = False
+check_argument_types : TLam[[],bool]
+if check_types:
+    check_argument_types = typeguard.check_argument_types
+else:
+    check_argument_types = lambda : True
 
 # --start-of-war--  mypy issue: https://github.com/python/mypy/issues/5485
 _BoxT = TTypeVar("_BoxT")
@@ -226,6 +234,7 @@ def _unpack(obj : TAny) -> TTuple[TAny, ...]:
     return tuple(getattr(obj, field.name) for field in dc.fields(obj))
 
 def evalI(term : TermI, env : Env) -> Value:
+    check_argument_types()
     if isinstance(term, Ann):
         return evalC(term.e1, env)
     elif isinstance(term, Free):
@@ -250,6 +259,7 @@ def evalI(term : TermI, env : Env) -> Value:
         mzVal = evalC(mz, env)
         msVal = evalC(ms, env)
         def rec1(kVal : Value) -> Value:
+            check_argument_types()
             if isinstance(kVal, VZero):
                 return mzVal
             elif isinstance(kVal, VSucc):
@@ -285,6 +295,7 @@ def evalI(term : TermI, env : Env) -> Value:
     raise TypeError(f"Unknown instance '{type(term)}'")
 
 def vapp(v : Value, v1 : Value) -> Value:
+    check_argument_types()
     if isinstance(v, VLam):
         return v.f(v1)
     elif isinstance(v, VNeutral):
@@ -313,6 +324,7 @@ def vapp(v : Value, v1 : Value) -> Value:
 #    return VLam(lambda x : evalC(lam_expr, [x] + env))
 
 def evalC(term : TermC, env : Env) -> Value:
+    check_argument_types()
     if isinstance(term, Inf):
         return evalI(term.e, env)
     elif isinstance(term, Lam):
@@ -322,6 +334,7 @@ def evalC(term : TermC, env : Env) -> Value:
 
 
 def typeI0(c : Context, term : TermI) -> Type:
+    check_argument_types()
     return typeI(0, c, term)
 
 def dict_merge(a : TDict[TAny, TAny],
@@ -331,6 +344,7 @@ def dict_merge(a : TDict[TAny, TAny],
     return a
 
 def typeI(i : int, c : Context, term : TermI) -> Type:
+    check_argument_types()
     if isinstance(term, Ann):
         typeC(i, c, term.e2, VStar())
         t = evalC(term.e2, [])
@@ -411,6 +425,7 @@ def typeI(i : int, c : Context, term : TermI) -> Type:
     raise TypeError(f"Unknown instance '{type(term)}'")
 
 def typeC(i : int, c: Context, term : TermC, ty : Type) -> None:
+    check_argument_types()
     e : TUnion[TermI, TermC]
     if isinstance(term, Inf):
         e = term.e
@@ -429,6 +444,7 @@ def typeC(i : int, c: Context, term : TermC, ty : Type) -> None:
     raise TypeError(f"Type mismatch: term={type(term)}', type={type(type)}")
 
 def substI(i : int, r : TermI, t : TermI) -> TermI:
+    check_argument_types()
     if isinstance(t, Ann):
         return Ann(substC(i,r,t.e1), t.e2)
     elif isinstance(t, Bound):
@@ -468,6 +484,7 @@ def substI(i : int, r : TermI, t : TermI) -> TermI:
     raise TypeError(f"Unknown instance '{type(t)}'")
 
 def substC(i : int, r : TermI, t : TermC) -> TermC:
+    check_argument_types()
     if isinstance(t, Inf):
         return Inf(substI(i,r,t.e))
     elif isinstance(t, Lam):
@@ -475,10 +492,12 @@ def substC(i : int, r : TermI, t : TermC) -> TermC:
     raise TypeError(f"Unknown instance '{type(t)}'")
 
 def quote0(v : Value) -> TermC:
+    check_argument_types()
     return quote(0,v)
 
 
 def quote(i : int, v : Value) -> TermC:
+    check_argument_types()
     if isinstance(v, VLam):
         return Lam(quote(i+1, v.f(vfree(Quote(i)))))
     elif isinstance(v, VNeutral):
@@ -504,6 +523,7 @@ def quote(i : int, v : Value) -> TermC:
     raise TypeError(f"Unknown instance '{type(v)}'")
 
 def neutralQuote(i : int, n : Neutral) -> TermI:
+    check_argument_types()
     if isinstance(n, NFree):
         return boundfree(i,n.x)
     elif isinstance(n, NApp):
@@ -514,6 +534,7 @@ def neutralQuote(i : int, n : Neutral) -> TermI:
     raise TypeError(f"Unknown instance '{type(n)}'")
 
 def boundfree(i : int, x : Name) -> TermI:
+    check_argument_types()
     if isinstance(x, Quote):
         return Bound(i-x.i-1)
     else:
