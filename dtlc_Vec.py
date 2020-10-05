@@ -766,7 +766,6 @@ e42_v3 = append |app| free("a") \
 print("e42_v3=", e42_v3)
 print("type(ev42_v3)=", typeI0(env42,e42_v3))
 print("eval(ev42_v3)=", evalI(e42_v3, []))
-#append_a = App(append,
 
 
 
