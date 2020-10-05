@@ -148,35 +148,29 @@ _VFunT = TUnion[Box[_VFunT0], _VFunT0]
 class VLam:
     f : _VFunT
     def __repr__(self) -> str:
-        return super().__repr__()
+        return f"{quote0(self)}"
 @dataclass(**_dc_attrs)
 class VNeutral:
     n : Neutral
-    def __repr__(self) -> str:
-        return super().__repr__()
 @dataclass(**_dc_attrs)
 class VStar:
     def __repr__(self) -> str:
-        return super().__repr__()
+        return f"*"
 @dataclass(**_dc_attrs)
 class VPi:
     v : Value
     f : _VFunT
     def __repr__(self) -> str:
-        return super().__repr__()
+        return f"{quote0(self)}"
 @dataclass(**_dc_attrs)
 class VNat:
-    def __repr__(self) -> str:
-        return super().__repr__()
+    pass
 @dataclass(**_dc_attrs)
 class VZero:
-    def __repr__(self) -> str:
-        return super().__repr__()
+    pass
 @dataclass(**_dc_attrs)
 class VSucc:
     k : Value
-    def __repr__(self) -> str:
-        return super().__repr__()
 @dataclass(**_dc_attrs)
 class VNil:
     a : Value
