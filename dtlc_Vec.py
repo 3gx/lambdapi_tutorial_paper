@@ -412,7 +412,7 @@ def typeC(i : int, c: Context, term : TermC, ty : Type) -> None:
         if quote0(v) != quote0(v1):
             raise TypeError(f"type mismatch: {quote0(v)} != {quote0(v1)}")
         return
-    elif isinstance(ty,VPi): # isinstance(term, Lam) is true
+    elif isinstance(term, Lam) and isinstance(ty,VPi):
         e = term.e
         t = ty.v
         tp = ty.f
