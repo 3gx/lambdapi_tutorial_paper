@@ -44,6 +44,7 @@ class Box(TGeneric[_BoxT]):
 abstract = dataclass(frozen=True)
 
 
+# mypy WAR for current lack of python forward declration, use strings :)
 TermI = TUnion["Ann", "Star", "Pi", "Bound", "Free", "App", \
                "Nat", "NatElim", "Zero", "Succ", \
                "Vec", "Nil", "Cons", "VecElim"]
