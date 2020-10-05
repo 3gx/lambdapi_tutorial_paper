@@ -291,6 +291,27 @@ def vapp(v : Value, v1 : Value) -> Value:
         return VNeutral(NApp(v.n, v1))
     raise TypeError(f"Unknown instance '{type(v)}'")
 
+#import patmat as pm #type: ignore
+##from patmat import *A
+#
+#@pm.case
+#def func(_, x=int):
+#    print("int")
+#@pm.case
+#def func(_,x=float):
+#    print("float")
+#func(1)
+#func(2.0)
+#sys.exit(0)
+
+#@case
+#def evalC(match, term=Inf, env : Env) -> Value:
+#    return evalI(term.e, env)
+#@case
+#def evalC(match, term:Lam, env : Env) -> Value:
+#    lam_expr = term.e
+#    return VLam(lambda x : evalC(lam_expr, [x] + env))
+
 def evalC(term : TermC, env : Env) -> Value:
     if isinstance(term, Inf):
         return evalI(term.e, env)
