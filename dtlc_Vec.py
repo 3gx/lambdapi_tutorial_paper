@@ -5,16 +5,6 @@
 # ```
 # see mypy.ini for configuration for mypy.
 #
-# you can also run pytype
-# ```
-# $ pytype dtlc_Vec.py
-# Computing dependencies
-# Analyzing 1 sources with 0 local dependencies
-# ninja: Entering directory `/Users/egx/Documents/work/Personal/Haskell/lambdapi_tutorial_paper.git/.pytype'
-# [1/1] check dtlc_Vec
-# Leaving directory '/Users/egx/Documents/work/Personal/Haskell/lambdapi_tutorial_paper.git/.pytype'
-# Success: no errors found
-# ```
 
 from __future__ import annotations
 
