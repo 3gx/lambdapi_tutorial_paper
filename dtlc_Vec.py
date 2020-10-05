@@ -222,6 +222,9 @@ vfree : TLam[[Name],Value] = lambda n :  VNeutral(NFree(n))
 Env = TList[Value]
 Context = TDict[Name, Type]
 
+def _unpack(obj : TAny) -> TTuple[TAny, ...]:
+    return tuple(getattr(obj, field.name) for field in dc.fields(obj))
+
 def evalI(term : TermI, env : Env) -> Value:
     if isinstance(term, Ann):
         return evalC(term.e1, env)
@@ -243,9 +246,7 @@ def evalI(term : TermI, env : Env) -> Value:
     elif isinstance(term, Succ):
         return VSucc(evalC(term.k, env))
     elif isinstance(term, NatElim):
-        def unpack(obj : TAny) -> TTuple[TAny, ...]:
-            return tuple(getattr(obj, field.name) for field in dc.fields(obj))
-        m, mz, ms, k = unpack(term)
+        m, mz, ms, k = _unpack(term)
         mzVal = evalC(mz, env)
         msVal = evalC(ms, env)
         def rec1(kVal : Value) -> Value:
@@ -258,7 +259,8 @@ def evalI(term : TermI, env : Env) -> Value:
             raise TypeError(f"Unknown instance '{type(kVal)}'")
         return rec1(evalC(k, env))
     elif isinstance(term, Vec):
-        return VVec(evalC(term.a, env), evalC(term.n, env))
+        a, n = _unpack(term)
+        return VVec(evalC(a, env), evalC(n, env))
     elif isinstance(term, Nil):
         return VNil(evalC(term.a, env))
     elif isinstance(term, Cons):
