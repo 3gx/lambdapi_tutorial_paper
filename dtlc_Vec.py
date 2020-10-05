@@ -607,10 +607,10 @@ print("eval(n4)=", nval2int(evalI(n4,[])))
 ## example from 4.2
 ## ##################
 ## > let append =
-## >   (\a #> vecElim a
-##                    (\m _ #> Pi (n :: Nat) . Vec a n #> Vec a (plus m n))
-##                    (\_ v #> v)
-##                    (\m v vs rec n w #> Cons a (plus m n) v (rec n w)))
+## >   (\a -> vecElim a
+##                    (\m _ -> Pi (n :: Nat) . Vec a n -> Vec a (plus m n))
+##                    (\_ v -> v)
+##                    (\m v vs rec n w -> Cons a (plus m n) v (rec n w)))
 ## append :: Pi (a :: *) (m :: Nat) (v :: Vec a m) (n :: Nat) (w :: Vec a n) .
 ##           Vec a (plus m n)
 
@@ -620,3 +620,6 @@ print("eval(n4)=", nval2int(evalI(n4,[])))
 ## Cons a 2 x (Cons a 1 x (Cons a 0 y (Nil a))) :: Vec a 3
 
 
+Plus = lambda x,y : App(plus(x),Inf(y))
+
+#append = Lam(VecElim
