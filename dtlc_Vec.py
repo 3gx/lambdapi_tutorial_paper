@@ -41,7 +41,7 @@ if check_types:
 else:
     check_argument_types = lambda : True
 
-# --start-of-war--  mypy issue: https://github.com/python/mypy/issues/5485
+# --WAR-beg--  mypy issue: https://github.com/python/mypy/issues/5485
 _BoxT = TTypeVar("_BoxT")
 @dataclass
 class Box(TGeneric[_BoxT]):
@@ -49,7 +49,7 @@ class Box(TGeneric[_BoxT]):
     @property
     def __call__(self) -> _BoxT:
         return self.inner
-# --end-of-war--
+# --WAR-end--
 
 
 abstract = dataclass(frozen=True)
@@ -245,7 +245,6 @@ Context = TDict[Name, Type]
 
 def _unpack(obj : TAny) -> TTuple[TAny, ...]:
     return tuple(getattr(obj, field.name) for field in dc.fields(obj))
-_cast = ty.cast
 
 def evalI(term : TermI, env : Env) -> Value:
     check_argument_types()
@@ -320,32 +319,11 @@ def vapp(value : Value, v : Value) -> Value:
     check_argument_types()
     if isinstance(value, VLam):
         f, = _unpack(value)
-        return _cast(Value, f(v))
+        return f(v)
     elif isinstance(value, VNeutral):
         n, =  _unpack(value)
         return VNeutral(NApp(n, v))
     raise TypeError(f"Unknown instance '{type(v)}'")
-
-#import patmat as pm #type: ignore
-##from patmat import *A
-#
-#@pm.case
-#def func(_, x=int):
-#    print("int")
-#@pm.case
-#def func(_,x=float):
-#    print("float")
-#func(1)
-#func(2.0)
-#sys.exit(0)
-
-#@case
-#def evalC(match, term=Inf, env : Env) -> Value:
-#    return evalI(term.e, env)
-#@case
-#def evalC(match, term:Lam, env : Env) -> Value:
-#    lam_expr = term.e
-#    return VLam(lambda x : evalC(lam_expr, [x] + env))
 
 def evalC(term : TermC, env : Env) -> Value:
     check_argument_types()
