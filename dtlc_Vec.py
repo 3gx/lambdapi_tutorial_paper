@@ -604,3 +604,19 @@ print("n4=", n4, type(n4).__class__)
 print("type(n4)=", typeI0({}, n4))
 print("eval(n4)=", nval2int(evalI(n4,[])))
 
+## example from 4.2
+## ##################
+## > let append =
+## >   (\a #> vecElim a
+##                    (\m _ #> Pi (n :: Nat) . Vec a n #> Vec a (plus m n))
+##                    (\_ v #> v)
+##                    (\m v vs rec n w #> Cons a (plus m n) v (rec n w)))
+## append :: Pi (a :: *) (m :: Nat) (v :: Vec a m) (n :: Nat) (w :: Vec a n) .
+##           Vec a (plus m n)
+
+## > assume (a :: *) (x :: a) (y :: a)
+## > append a 2 (Cons a 1 x (Cons a 0 x (Nil a)))
+##            1 (Cons a 0 y (Nil a))
+## Cons a 2 x (Cons a 1 x (Cons a 0 y (Nil a))) :: Vec a 3
+
+
