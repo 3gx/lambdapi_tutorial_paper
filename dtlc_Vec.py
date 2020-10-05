@@ -99,6 +99,8 @@ class Succ:
 class Vec:
     a : TermC
     n : TermC
+    def __repr__(self) -> str:
+        return f"(Vec {self.a} {self.n})"
 @dataclass(**_dc_attrs)
 class Nil:
     a : TermC
@@ -110,6 +112,8 @@ class Cons:
     n : TermC
     x : TermC
     xs : TermC
+    def __repr__(self) -> str:
+        return f"(Cons {self.a} {self.n} {self.x} {self.xs})"
 @dataclass(**_dc_attrs)
 class VecElim:
     a : TermC
@@ -135,7 +139,7 @@ Name = TUnion["Global", "Local", "Quote"]
 class Global:
     str_ : str
     def __repr__(self) -> str:
-        return f"(Global '{self.str_}')"
+        return f"'{self.str_}'"
 @dataclass(**_dc_attrs)
 class Local:
     i : int
@@ -172,19 +176,27 @@ class VZero:
 @dataclass(**_dc_attrs)
 class VSucc:
     k : Value
+    def __repr__(self) -> str:
+        return f"{quote0(self)}"
 @dataclass(**_dc_attrs)
 class VNil:
     a : Value
+    def __repr__(self) -> str:
+        return f"{quote0(self)}"
 @dataclass(**_dc_attrs)
 class VCons:
     a : Value
     n : Value
     x : Value
     xs : Value
+    def __repr__(self) -> str:
+        return f"{quote0(self)}"
 @dataclass(**_dc_attrs)
 class VVec:
     a : Value
     n : Value
+    def __repr__(self) -> str:
+        return f"{quote0(self)}"
 
 Value = TUnion[VLam, VNeutral, VStar, VPi, \
                VNat, VZero, VSucc, \
@@ -288,7 +300,7 @@ def evalI(term : TermI, env : Env) -> Value:
                                          evalC(m, env),
                                          mnVal, mcVal, nVal, xsVal.n))
             raise TypeError(f"Unknown instance '{type(xsVal)}'")
-
+        return rec2(evalC(n,env), evalC(xs,env))
     raise TypeError(f"Unknown instance '{type(term)}'")
 
 def vapp(value : Value, v : Value) -> Value:
@@ -418,7 +430,7 @@ def typeC(i : int, c: Context, term : TermC, type_ : Type) -> None:
         typeC(i+1, dict_merge({Local(i): t}, c),
                    substC(0, Free(Local(i)), e), tp(vfree(Local(i))))
         return
-    raise TypeError(f"Type mismatch: term={type(term)}', type={type(type)}")
+    raise TypeError(f"Type mismatch: term={type(term)}', type={type(type_)}")
 
 def substI(i : int, r : TermI, t : TermI) -> TermI:
     check_argument_types()
@@ -712,18 +724,22 @@ def vec(a : TermC, n : TermC) -> TermC:
 append = Ann(Lam(Lam(Lam(Inf(VecElim(
                bound(2),
                Lam(Lam(pi(Inf(Nat()),
-                    pi(vec(bound(3),bound(0)),
-                        vec(bound(4), plus1(bound(3),bound(1))))))),
+                    pi(vec(bound(5),bound(0)),
+                        vec(bound(6), plus1(bound(3),bound(1))))))),
                Lam(Lam(bound(0))),
                Lam(Lam(Lam(Lam(Lam(Lam(
-                   Inf(Cons(bound(6),
+                   Inf(Cons(bound(8),
                         plus1(bound(5), bound(1)),
                         bound(4),
                         Inf(App(App(Bound(2),bound(1)),bound(0))))))))))),
                    bound(1), bound(0)))))),
         pi(Inf(Star()),
             pi(Inf(Nat()),
-                Inf(Vec(bound(1), bound(0))))))
+                pi(Inf(Vec(bound(1), bound(0))),
+                    pi(Inf(Nat()),
+                        pi(Inf(Vec(bound(3), bound(0))),
+                            Inf(Vec(bound(4), plus1(bound(3),bound(1))))))))))
+
 print("append=", append)
 print("type(append)=", typeI0({}, append))
 
@@ -732,13 +748,24 @@ env42 : Context
 env42 = {Global("a"):VStar(),
          Global("x"):VNeutral(NFree(Global("a"))),
          Global("y"):VNeutral(NFree(Global("a")))}
-v1 = Inf(Cons(free("a"),
+e42_v2 = Inf(Cons(free("a"),
           int2nat(1),
           free("x"),
           Inf(Cons(free("a"), int2nat(0), free("x"),
           Inf(Nil(free("a")))))))
-print("append=", append)
-#print("type(append)=", typeI0(env42,append))
+e42_v1 = Inf(Cons(free("a"),
+          int2nat(0),
+          free("y"),
+          Inf(Nil(free("a")))))
+e42_v3 = append |app| free("a") \
+             |app| int2nat(2) \
+             |app| e42_v2 \
+             |app| int2nat(1) \
+             |app| e42_v1
+
+print("e42_v3=", e42_v3)
+print("type(ev42_v3)=", typeI0(env42,e42_v3))
+print("eval(ev42_v3)=", evalI(e42_v3, []))
 #append_a = App(append,
 
 
