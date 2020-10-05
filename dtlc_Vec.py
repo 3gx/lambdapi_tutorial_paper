@@ -1,3 +1,10 @@
+# run 'mypy' on this source tree, e.g. form the root repo folder, run
+# ```
+# $ mypy
+# Success: no issues found in 4 source files
+# ```
+# see mypy.ini for configuration
+
 from __future__ import annotations
 
 import typing as ty
@@ -240,7 +247,7 @@ def evalI(term : TermI, env : Env) -> Value:
             raise TypeError(f"Unknown instance '{type(kVal)}'")
         return rec1(evalC(k, env))
     elif isinstance(term, Vec):
-        return VVec(evalC(Vec.a, env), evalC(Vec.n, env))
+        return VVec(evalC(term.a, env), evalC(term.n, env))
     elif isinstance(term, Nil):
         return VNil(evalC(term.a, env))
     elif isinstance(term, Cons):
@@ -453,6 +460,13 @@ def quote(i : int, v : Value) -> TermC:
         return Inf(Zero())
     elif isinstance(v, VSucc):
         return Inf(Succ(quote(i,v.k)))
+    elif isinstance(v, VNil):
+        return Inf(Nil(quote(i,v.a)))
+    elif isinstance(v, VVec):
+        return Inf(Vec(quote(i,v.a), quote(i,v.n)))
+    elif isinstance(v, VCons):
+        return Inf(Cons(quote(i,v.a), quote(i,v.n),
+                        quote(i,v.x), quote(i,v.xs)))
     raise TypeError(f"Unknown instance '{type(v)}'")
 
 def neutralQuote(i : int, n : Neutral) -> TermI:
@@ -460,6 +474,9 @@ def neutralQuote(i : int, n : Neutral) -> TermI:
         return boundfree(i,n.x)
     elif isinstance(n, NApp):
         return App(neutralQuote(i, n.n), quote(i,n.v))
+    elif isinstance(n, NNatElim):
+        return NatElim(quote(i,n.a), quote(i,n.n),
+                       quote(i,n.x), Inf(neutralQuote(i,n.xs)))
     raise TypeError(f"Unknown instance '{type(n)}'")
 
 def boundfree(i : int, x : Name) -> TermI:
@@ -620,6 +637,34 @@ print("eval(n4)=", nval2int(evalI(n4,[])))
 ## Cons a 2 x (Cons a 1 x (Cons a 0 y (Nil a))) :: Vec a 3
 
 
-Plus = lambda x,y : App(plus(x),Inf(y))
+def plus1(x : TermC, y : TermC) -> TermC:
+    return Inf(App(plus(x),y))
 
-#append = Lam(VecElim
+def bound(i : int) -> TermC:
+    return Inf(Bound(i))
+def vec(a : TermC, n : TermC) -> TermC:
+    return Inf(Vec(a,n))
+
+def f_append(n : TermC, xs : TermC) -> TermI:
+    return Pi(Inf(Star()), Inf(
+             VecElim(
+               bound(0),
+               Lam(Lam(pi(Inf(Nat()),
+                    pi(vec(bound(3),bound(0)),
+                        vec(bound(4), plus1(bound(3),bound(1))))))),
+               Lam(Lam(bound(0))),
+               Lam(Lam(Lam(Lam(Lam(Lam(
+                   Inf(Cons(bound(6),
+                        plus1(bound(5), bound(1)),
+                        bound(4),
+                        Inf(App(App(Bound(2),bound(1)),bound(0))))))))))),
+                   n, xs)))
+
+env42 : Context
+env42 = {Global("a"):VStar(),
+         Global("x"):VNeutral(NFree(Global("a"))),
+         Global("y"):VNeutral(NFree(Global("a")))}
+append = f_append(free("a"), int2nat(2))
+print("append=", append)
+print("type(append)=", typeI0(env42,append))
+#append_a = App(append,
