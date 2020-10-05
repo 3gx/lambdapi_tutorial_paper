@@ -373,15 +373,16 @@ def typeI(i : int, c : Context, term : TermI) -> Type:
         aVal = evalC(term.a, [])
         return VVec(aVal, VZero())
     elif isinstance(term, Cons):
-        typeC(i,c,term.a, VStar())
+        a, k, x, xs = _unpack(term)
+        typeC(i,c, a, VStar())
         aVal = evalC(term.a, [])
-        typeC(i,c,term.n, VNat())
+        typeC(i,c, k, VNat())
         kVal = evalC(term.n, [])
-        typeC(i,c,term.x, aVal)
-        typeC(i,c,term.xs, VVec(aVal, kVal))
+        typeC(i,c,x, aVal)
+        typeC(i,c,xs, VVec(aVal, kVal))
         return VVec(aVal, VSucc(kVal))
     elif isinstance(term, VecElim):
-        a,m,mn,mc,k,vs = (term.a, term.m, term.mn, term.mc, term.n, term.xs)
+        a,m,mn,mc,k,vs = _unpack(term)
         typeC(i,c,a,VStar())
         aVal = evalC(a, [])
         typeC(i,c,m, VPi(VNat(), lambda k : VPi(VVec(aVal,k),
@@ -666,7 +667,7 @@ class Infix(object):
     def __or__(self, other : TAny) -> TAny:
         return _cast(TLam[[TAny],TAny],self.func)(other)
     def __ror__(self, other : TAny) -> Infix:
-        return Infix(partial(self.func, other)) 
+        return Infix(partial(self.func, other))
 
 @Infix
 def app(x : TermI, y : TermC) -> TermI:
@@ -708,10 +709,8 @@ def bound(i : int) -> TermC:
 def vec(a : TermC, n : TermC) -> TermC:
     return Inf(Vec(a,n))
 
-def f_append(n : TermC, xs : TermC) -> TermI:
-    return Pi(Inf(Star()), Inf(
-             VecElim(
-               bound(0),
+append = Ann(Lam(Lam(Lam(Inf(VecElim(
+               bound(2),
                Lam(Lam(pi(Inf(Nat()),
                     pi(vec(bound(3),bound(0)),
                         vec(bound(4), plus1(bound(3),bound(1))))))),
@@ -721,7 +720,13 @@ def f_append(n : TermC, xs : TermC) -> TermI:
                         plus1(bound(5), bound(1)),
                         bound(4),
                         Inf(App(App(Bound(2),bound(1)),bound(0))))))))))),
-                   n, xs)))
+                   bound(1), bound(0)))))),
+        pi(Inf(Star()),
+            pi(Inf(Nat()),
+                Inf(Vec(bound(1), bound(0))))))
+print("append=", append)
+print("type(append)=", typeI0({}, append))
+
 
 env42 : Context
 env42 = {Global("a"):VStar(),
@@ -732,7 +737,10 @@ v1 = Inf(Cons(free("a"),
           free("x"),
           Inf(Cons(free("a"), int2nat(0), free("x"),
           Inf(Nil(free("a")))))))
-append = f_append(int2nat(2), v1)
 print("append=", append)
-print("type(append)=", typeI0(env42,append))
+#print("type(append)=", typeI0(env42,append))
 #append_a = App(append,
+
+
+
+
