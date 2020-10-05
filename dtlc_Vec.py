@@ -28,8 +28,7 @@ import dataclasses as dc
 import typeguard
 import functools
 from functools import reduce as fold
-#import operator
-#foldl = lambda func, acc, xs: functools.reduce(func, xs, acc)
+foldl : TLam[[TAny, TAny, TAny], TAny] = lambda func, acc, xs: functools.reduce(func, xs, acc)
 
 _dc_attrs = {"frozen": True}
 
@@ -54,77 +53,70 @@ class Box(TGeneric[_BoxT]):
 
 abstract = dataclass(frozen=True)
 
-@abstract
-class TermI:
-    pass
 @dataclass(**_dc_attrs)
-class Ann(TermI):
+class Ann:
     e1 : TermC
     e2 : TermC
 @dataclass(**_dc_attrs)
-class Star(TermI):
+class Star:
     def __repr__(self) -> str:
         return f"*"
 @dataclass(**_dc_attrs)
-class Pi(TermI):
+class Pi:
     e1 : TermC
     e2 : TermC
     def __repr__(self) -> str:
         return f"(Pi {self.e1} {self.e2})"
 @dataclass(**_dc_attrs)
-class Bound(TermI):
+class Bound:
     i : int
     def __repr__(self) -> str:
         return f"(Bound {self.i})"
 @dataclass(**_dc_attrs)
-class Free(TermI):
+class Free:
     x : Name
     def __repr__(self) -> str:
         return f"{self.x}"
 @dataclass(**_dc_attrs)
-class App(TermI):
-    e1 : TermI
+class App:
+    e1:  TermI
     e2 : TermC
 @dataclass(**_dc_attrs)
-class Nat(TermI):
+class Nat:
     def __repr__(self) -> str:
         return "Nat"
 @dataclass(**_dc_attrs)
-class NatElim(TermI):
+class NatElim:
     e1 : TermC
     e2 : TermC
     e3 : TermC
     e4 : TermC
 @dataclass(**_dc_attrs)
-class Zero(TermI):
+class Zero:
     def __repr__(self) -> str:
         return "Zero"
 @dataclass(**_dc_attrs)
-class Succ(TermI):
+class Succ:
     k : TermC
     def __repr__(self) -> str:
         return f"(Succ {self.k})"
-
 @dataclass(**_dc_attrs)
-class Vec(TermI):
+class Vec:
     a : TermC
     n : TermC
-
 @dataclass(**_dc_attrs)
-class Nil(TermI):
+class Nil:
     a : TermC
     def __repr__(self) -> str:
         return f"(Nil {self.a})"
-
 @dataclass(**_dc_attrs)
-class Cons(TermI):
+class Cons:
     a : TermC
     n : TermC
     x : TermC
     xs : TermC
-
 @dataclass(**_dc_attrs)
-class VecElim(TermI):
+class VecElim:
     a : TermC
     m : TermC
     mn : TermC
@@ -132,111 +124,109 @@ class VecElim(TermI):
     n : TermC
     xs : TermC
 
-@abstract
-class TermC:
-    pass
+TermI = TUnion[Ann, Star, Pi, Bound, Free, App, \
+               Nat, NatElim, Zero, Succ, \
+               Vec, Nil, Cons, VecElim]
+
 @dataclass(**_dc_attrs)
-class Inf(TermC):
+class Inf:
     e : TermI
     def __repr__(self) -> str:
         return f"{self.e}"
 @dataclass(**_dc_attrs)
-class Lam(TermC):
+class Lam:
     e : TermC
 
-@abstract
-class Name():
-    pass
+TermC = TUnion[Inf, Lam]
+
 @dataclass(**_dc_attrs)
-class Global(Name):
+class Global:
     str_ : str
     def __repr__(self) -> str:
         return f"(Global '{self.str_}')"
 @dataclass(**_dc_attrs)
-class Local(Name):
+class Local:
     i : int
 @dataclass(**_dc_attrs)
-class Quote(Name):
+class Quote:
     i : int
+Name = TUnion[Global, Local, Quote]
 
-@abstract
-class Value:
-    def __repr__(self) -> str:
-        return f"{quote0(self)}"
-_VFunT0 = TLam[[Value], Value]
-_VFunT = TUnion[Box[_VFunT0], _VFunT0]
 @dataclass(**_dc_attrs)
-class VLam(Value):
+class VLam:
     f : _VFunT
     def __repr__(self) -> str:
         return super().__repr__()
 @dataclass(**_dc_attrs)
-class VNeutral(Value):
+class VNeutral:
     n : Neutral
     def __repr__(self) -> str:
         return super().__repr__()
 @dataclass(**_dc_attrs)
-class VStar(Value):
+class VStar:
     def __repr__(self) -> str:
         return super().__repr__()
 @dataclass(**_dc_attrs)
-class VPi(Value):
+class VPi:
     v : Value
     f : _VFunT
     def __repr__(self) -> str:
         return super().__repr__()
 @dataclass(**_dc_attrs)
-class VNat(Value):
+class VNat:
     def __repr__(self) -> str:
         return super().__repr__()
 @dataclass(**_dc_attrs)
-class VZero(Value):
+class VZero:
     def __repr__(self) -> str:
         return super().__repr__()
 @dataclass(**_dc_attrs)
-class VSucc(Value):
+class VSucc:
     k : Value
     def __repr__(self) -> str:
         return super().__repr__()
 @dataclass(**_dc_attrs)
-class VNil(Value):
+class VNil:
     a : Value
 @dataclass(**_dc_attrs)
-class VCons(Value):
+class VCons:
     a : Value
     n : Value
     x : Value
     xs : Value
 @dataclass(**_dc_attrs)
-class VVec(Value):
+class VVec:
     a : Value
     n : Value
 
+Value = TUnion[VLam, VNeutral, VStar, VPi, \
+               VNat, VZero, VSucc, \
+               VNil, VCons, VVec]
+_VFunT0 = TLam[[Value], Value]
+_VFunT = TUnion[Box[_VFunT0], _VFunT0]
 
-@abstract
-class Neutral:
-    pass
 @dataclass(**_dc_attrs)
-class NFree(Neutral):
+class NFree:
     x : Name
 @dataclass(**_dc_attrs)
-class NApp(Neutral):
+class NApp:
     n : Neutral
     v : Value
 @dataclass(**_dc_attrs)
-class NNatElim(Neutral):
+class NNatElim:
     a  : Value
     n  : Value
     x  : Value
     xs : Neutral
 @dataclass(**_dc_attrs)
-class NVecElim(Neutral):
+class NVecElim:
     v1 : Value
     v2 : Value
     v3 : Value
     v4 : Value
     v5 : Value
     n  : Neutral
+Neutral = TUnion[NFree, NApp, NNatElim, NVecElim]
 
 Type = Value
 vfree : TLam[[Name],Value] = lambda n :  VNeutral(NFree(n))
@@ -411,14 +401,14 @@ def typeI(i : int, c : Context, term : TermI) -> Type:
         typeC(i,c,m, VPi(VNat(), lambda k : VPi(VVec(aVal,k),
                                      lambda _ : VStar())))
         mVal = evalC(m, [])
-        typeC(i,c,mn, fold(vapp, [VZero(), VNil(aVal)], mVal))
+        typeC(i,c,mn, foldl(vapp, mVal, [VZero(), VNil(aVal)]))
         typeC(i,c,mc,
                 VPi(VNat(), lambda l:
                     VPi(aVal, lambda y:
                         VPi(VVec(aVal,l), lambda ys:
-                            VPi(fold(vapp, [l,ys], mVal), lambda _:
-                                fold(vapp, [VSucc(l), VCons(aVal,l,y,ys)],
-                                    mVal))))))
+                            VPi(foldl(vapp, mVal, [l,ys]), lambda _:
+                                foldl(vapp, mVal, [VSucc(l), VCons(aVal,l,y,ys)]
+                                    ))))))
         typeC(i,c,k,VNat())
         kVal = evalC(k, [])
         typeC(i,c,vs,VVec(aVal,kVal))
@@ -434,9 +424,9 @@ def typeC(i : int, c: Context, term : TermC, ty : Type) -> None:
         v = ty
         v1 = typeI(i, c, e)
         if quote0(v) != quote0(v1):
-            raise TypeError(f"type mismatch: {v} != {v1}")
+            raise TypeError(f"type mismatch: {quote0(v)} != {quote0(v1)}")
         return
-    elif isinstance(term, Lam) and isinstance(ty, VPi):
+    elif isinstance(ty,VPi): # isinstance(term, Lam) is true
         e = term.e
         t = ty.v
         tp = ty.f
