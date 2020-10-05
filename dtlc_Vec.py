@@ -53,6 +53,10 @@ class Box(TGeneric[_BoxT]):
 
 abstract = dataclass(frozen=True)
 
+
+TermI = TUnion["Ann", "Star", "Pi", "Bound", "Free", "App", \
+               "Nat", "NatElim", "Zero", "Succ", \
+               "Vec", "Nil", "Cons", "VecElim"]
 @dataclass(**_dc_attrs)
 class Ann:
     e1 : TermC
@@ -124,10 +128,7 @@ class VecElim:
     n : TermC
     xs : TermC
 
-TermI = TUnion[Ann, Star, Pi, Bound, Free, App, \
-               Nat, NatElim, Zero, Succ, \
-               Vec, Nil, Cons, VecElim]
-
+TermC = TUnion["Inf", "Lam"]
 @dataclass(**_dc_attrs)
 class Inf:
     e : TermI
@@ -137,8 +138,8 @@ class Inf:
 class Lam:
     e : TermC
 
-TermC = TUnion[Inf, Lam]
 
+Name = TUnion["Global", "Local", "Quote"]
 @dataclass(**_dc_attrs)
 class Global:
     str_ : str
@@ -150,8 +151,9 @@ class Local:
 @dataclass(**_dc_attrs)
 class Quote:
     i : int
-Name = TUnion[Global, Local, Quote]
 
+_VFunT0 = TLam[["Value"], "Value"]
+_VFunT = TUnion[Box[_VFunT0], _VFunT0]
 @dataclass(**_dc_attrs)
 class VLam:
     f : _VFunT
@@ -202,9 +204,9 @@ class VVec:
 Value = TUnion[VLam, VNeutral, VStar, VPi, \
                VNat, VZero, VSucc, \
                VNil, VCons, VVec]
-_VFunT0 = TLam[[Value], Value]
-_VFunT = TUnion[Box[_VFunT0], _VFunT0]
 
+
+Neutral = TUnion["NFree", "NApp", "NNatElim", "NVecElim"]
 @dataclass(**_dc_attrs)
 class NFree:
     x : Name
@@ -226,7 +228,6 @@ class NVecElim:
     v4 : Value
     v5 : Value
     n  : Neutral
-Neutral = TUnion[NFree, NApp, NNatElim, NVecElim]
 
 Type = Value
 vfree : TLam[[Name],Value] = lambda n :  VNeutral(NFree(n))
