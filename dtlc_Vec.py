@@ -277,7 +277,7 @@ def typeC(i : int, c: Context, term : TermC, ty : Type) -> None:
         typeC(i+1, dict_merge({Local(i): t}, c),
                    substC(0, Free(Local(i)), e), tp(vfree(Local(i))))
         return
-    raise TypeError(f"Type mismatch: term={term}', type={type}")
+    raise TypeError(f"Type mismatch: term={type(term)}', type={type(type)}")
 
 def substI(i : int, r : TermI, t : TermI) -> TermI:
     if isinstance(t, Ann):
@@ -454,3 +454,33 @@ n42 = nval2int(n42v)
 print("n42=", n42)
 ## > n42
 ## 42
+
+from functools import partial
+
+class Infix(object):
+    T = TTypeVar("T")
+    U = TTypeVar("U")
+    R = TTypeVar("R")
+    def __init__(self, func : TUnion[TLam[[U],R], TLam[[T,U],R]]):
+        self.func = func
+    def __or__(self, other : U) -> R:
+        return ty.cast(TLam[[Infix.U],Infix.R],self.func)(other)
+    def __ror__(self, other : T) -> Infix:
+        return Infix(partial(self.func, other)) #type: ignore
+
+@Infix
+def app(x : TermI, y : TermC) -> TermI:
+    return App(x,y)
+
+n1 = int2nat(1)
+n2a : TermI = plus(n1) |app| n1
+print("n2a=", n2a)
+print("type(n2a)=", typeI0({}, n2a))
+n2e = evalI(n2a, [])
+print("n2e=", n2e)
+print("n2e=", nval2int(n2e))
+n4 = App(plus(Inf(n2a)), Inf(n2a))
+print("n4=", n4, type(n4).__class__)
+print("type(n4)=", typeI0({}, n4))
+print("eval(n4)=", nval2int(evalI(n4,[])))
+
