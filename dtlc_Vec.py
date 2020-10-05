@@ -152,7 +152,6 @@ class Global(Name):
     str_ : str
     def __repr__(self) -> str:
         return f"(Global '{self.str_}')"
-
 @dataclass(**_dc_attrs)
 class Local(Name):
     i : int
@@ -246,28 +245,35 @@ Context = TDict[Name, Type]
 
 def _unpack(obj : TAny) -> TTuple[TAny, ...]:
     return tuple(getattr(obj, field.name) for field in dc.fields(obj))
+_cast = ty.cast
 
 def evalI(term : TermI, env : Env) -> Value:
     check_argument_types()
     if isinstance(term, Ann):
-        return evalC(term.e1, env)
+        e, _ = _unpack(term)
+        return evalC(e, env)
     elif isinstance(term, Free):
-        return vfree(term.x)
+        x, = _unpack(term)
+        return vfree(x)
     elif isinstance(term, Bound):
-        return env[term.i]
+        i : int
+        i, = _unpack(term)
+        return env[i]
     elif isinstance(term, App):
-        return vapp(evalI(term.e1, env), evalC(term.e2, env))
+        e, e1 = _unpack(term)
+        return vapp(evalI(e, env), evalC(e1, env))
     elif isinstance(term, Star):
         return VStar()
     elif isinstance(term, Pi):
-        e2 = term.e2
-        return VPi(evalC(term.e1,env), lambda x: evalC(e2, [x] + env))
+        t,t1 = _unpack(term)
+        return VPi(evalC(t,env), lambda x: evalC(t1, [x] + env))
     elif isinstance(term, Nat):
         return VNat()
     elif isinstance(term, Zero):
         return VZero()
     elif isinstance(term, Succ):
-        return VSucc(evalC(term.k, env))
+        k, = _unpack(term)
+        return VSucc(evalC(k, env))
     elif isinstance(term, NatElim):
         m, mz, ms, k = _unpack(term)
         mzVal = evalC(mz, env)
@@ -286,14 +292,16 @@ def evalI(term : TermI, env : Env) -> Value:
         a, n = _unpack(term)
         return VVec(evalC(a, env), evalC(n, env))
     elif isinstance(term, Nil):
-        return VNil(evalC(term.a, env))
+        a, = _unpack(term)
+        return VNil(evalC(a, env))
     elif isinstance(term, Cons):
-        return VCons(evalC(term.a, env), evalC(term.n, env),
-                     evalC(term.x, env), evalC(term.xs, env))
+        a, n, x, xs = _unpack(term)
+        return VCons(evalC(a, env), evalC(n, env),
+                     evalC(x, env), evalC(xs, env))
     elif isinstance(term, VecElim):
-        mnVal = evalC(term.mn, env)
-        mcVal = evalC(term.mc, env)
-        a,m,mn,mc,n,xs = (term.a, term.m, term.mn, term.mc, term.n, term.xs)
+        a, m, mn, mc, n, xs = _unpack(term)
+        mnVal = evalC(mn, env)
+        mcVal = evalC(mc, env)
         def rec2(nVal : Value, xsVal : Value) -> Value:
             if isinstance(xsVal, VNil):
                 return mnVal
@@ -308,12 +316,14 @@ def evalI(term : TermI, env : Env) -> Value:
 
     raise TypeError(f"Unknown instance '{type(term)}'")
 
-def vapp(v : Value, v1 : Value) -> Value:
+def vapp(value : Value, v : Value) -> Value:
     check_argument_types()
-    if isinstance(v, VLam):
-        return v.f(v1)
-    elif isinstance(v, VNeutral):
-        return VNeutral(NApp(v.n, v1))
+    if isinstance(value, VLam):
+        f, = _unpack(value)
+        return _cast(Value, f(v))
+    elif isinstance(value, VNeutral):
+        n, =  _unpack(value)
+        return VNeutral(NApp(n, v))
     raise TypeError(f"Unknown instance '{type(v)}'")
 
 #import patmat as pm #type: ignore
