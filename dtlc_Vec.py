@@ -664,7 +664,12 @@ env42 : Context
 env42 = {Global("a"):VStar(),
          Global("x"):VNeutral(NFree(Global("a"))),
          Global("y"):VNeutral(NFree(Global("a")))}
-append = f_append(free("a"), int2nat(2))
+v1 = Inf(Cons(free("a"),
+          int2nat(1),
+          free("x"),
+          Inf(Cons(free("a"), int2nat(0), free("x"),
+          Inf(Nil(free("a")))))))
+append = f_append(int2nat(2), v1)
 print("append=", append)
 print("type(append)=", typeI0(env42,append))
 #append_a = App(append,
