@@ -11,7 +11,7 @@ import typing as ty
 from typing import Any as TAny, Callable as TLam, List as TList, \
                    Dict as TDict, Union as TUnion, Type as TType, \
                    TypeVar as TTypeVar, Generic as TGeneric
-
+import sys
 from dataclasses import dataclass
 import functools
 from functools import reduce as fold
@@ -561,6 +561,22 @@ plus : TLam[[TermC], TermI] = lambda x : NatElim(
         ),
         x
        )
+plusx = Pi(Inf(Nat()), Inf(NatElim(
+        Lam(pi(Inf(Nat()),Inf(Nat()))),
+        Lam(Inf(Bound(0))),
+        Lam(
+          Lam(
+            Lam(
+              Inf(
+                Succ (Inf (App(Bound(1), Inf(Bound(0)))))
+              )
+            )
+          )
+        ),
+        Inf(Bound(0))
+       )))
+print("type(plusx)=", typeI0({}, plusx))
+sys.exit(0)
 
 def int2nat(n : int) -> TermC:
     if n == 0:
