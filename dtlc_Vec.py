@@ -46,9 +46,13 @@ class Star(TermI):
 class Pi(TermI):
     e1 : TermC
     e2 : TermC
+    def __repr__(self) -> str:
+        return f"(Pi {self.e1} {self.e2})"
 @dataclass(**_dc_attrs)
 class Bound(TermI):
     i : int
+    def __repr__(self) -> str:
+        return f"(Bound {self.i})"
 @dataclass(**_dc_attrs)
 class Free(TermI):
     x : Name
@@ -60,7 +64,8 @@ class App(TermI):
     e2 : TermC
 @dataclass(**_dc_attrs)
 class Nat(TermI):
-    pass
+    def __repr__(self) -> str:
+        return "Nat"
 @dataclass(**_dc_attrs)
 class NatElim(TermI):
     e1 : TermC
@@ -69,7 +74,8 @@ class NatElim(TermI):
     e4 : TermC
 @dataclass(**_dc_attrs)
 class Zero(TermI):
-    pass
+    def __repr__(self) -> str:
+        return "Zero"
 @dataclass(**_dc_attrs)
 class Succ(TermI):
     k : TermC
@@ -84,6 +90,8 @@ class Vec(TermI):
 @dataclass(**_dc_attrs)
 class Nil(TermI):
     a : TermC
+    def __repr__(self) -> str:
+        return f"(Nil {self.a})"
 
 @dataclass(**_dc_attrs)
 class Cons(TermI):
@@ -120,7 +128,7 @@ class Name():
 class Global(Name):
     str_ : str
     def __repr__(self) -> str:
-        return f"(Global {self.str_})"
+        return f"(Global '{self.str_}')"
 
 @dataclass(**_dc_attrs)
 class Local(Name):
@@ -576,7 +584,7 @@ plusx = Ann(Lam(Inf(NatElim(
         Inf(Bound(0))
        ))), pi(Inf(Nat()), pi(Inf(Nat()), Inf(Nat()))))
 print("type(plusx)=", typeI0({}, plusx))
-sys.exit(0)
+#sys.exit(0)
 
 def int2nat(n : int) -> TermC:
     if n == 0:
