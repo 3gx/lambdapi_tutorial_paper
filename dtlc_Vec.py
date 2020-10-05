@@ -3,7 +3,18 @@
 # $ mypy
 # Success: no issues found in 4 source files
 # ```
-# see mypy.ini for configuration
+# see mypy.ini for configuration for mypy.
+#
+# you can also run pytype
+# ```
+# $ pytype dtlc_Vec.py
+# Computing dependencies
+# Analyzing 1 sources with 0 local dependencies
+# ninja: Entering directory `/Users/egx/Documents/work/Personal/Haskell/lambdapi_tutorial_paper.git/.pytype'
+# [1/1] check dtlc_Vec
+# Leaving directory '/Users/egx/Documents/work/Personal/Haskell/lambdapi_tutorial_paper.git/.pytype'
+# Success: no errors found
+# ```
 
 from __future__ import annotations
 
@@ -34,7 +45,7 @@ else:
 _BoxT = TTypeVar("_BoxT")
 @dataclass
 class Box(TGeneric[_BoxT]):
-    inner: _BoxT
+    inner: _BoxT # pytype: disable=not-supported-yet
     @property
     def __call__(self) -> _BoxT:
         return self.inner
