@@ -625,7 +625,8 @@ print("n42=", n42)
 
 from functools import partial
 
-class Infix(object):
+"""
+class Infix1(object):
     T = TTypeVar("T")
     U = TTypeVar("U")
     R = TTypeVar("R")
@@ -637,11 +638,24 @@ class Infix(object):
         return Infix(partial(self.func, other)) #type: ignore
 
 @Infix
+def app1(x : TermI, y : TermC) -> TermI:
+    return App(x,y)
+"""
+
+class Infix(object):
+    def __init__(self, func : TUnion[TLam[[TAny],TAny], TLam[[TAny,TAny],TAny]]):
+        self.func = func
+    def __or__(self, other : TAny) -> TAny:
+        return ty.cast(TLam[[TAny],TAny],self.func)(other)
+    def __ror__(self, other : TAny) -> Infix:
+        return Infix(partial(self.func, other)) 
+
+@Infix
 def app(x : TermI, y : TermC) -> TermI:
     return App(x,y)
 
 n1 = int2nat(1)
-n2a : TermI = plus(n1) |app| n1
+n2a = plus(n1) |app| n1
 print("n2a=", n2a)
 print("type(n2a)=", typeI0({}, n2a))
 n2e = evalI(n2a, [])
