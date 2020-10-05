@@ -6,6 +6,10 @@ from typing import Any as TAny, Callable as TLam, List as TList, \
                    TypeVar as TTypeVar, Generic as TGeneric
 
 from dataclasses import dataclass
+import functools
+from functools import reduce as fold
+#import operator
+#foldl = lambda func, acc, xs: functools.reduce(func, xs, acc)
 
 _dc_attrs = {"frozen": True}
 
@@ -65,6 +69,30 @@ class Succ(TermI):
     def __repr__(self) -> str:
         return f"(Succ {self.k})"
 
+@dataclass(**_dc_attrs)
+class Vec(TermI):
+    a : TermC
+    n : TermC
+
+@dataclass(**_dc_attrs)
+class Nil(TermI):
+    a : TermC
+
+@dataclass(**_dc_attrs)
+class Cons(TermI):
+    a : TermC
+    n : TermC
+    x : TermC
+    xs : TermC
+
+@dataclass(**_dc_attrs)
+class VecElim(TermI):
+    a : TermC
+    m : TermC
+    mn : TermC
+    mc : TermC
+    n : TermC
+    xs : TermC
 
 @dataclass(**_dc_attrs)
 class TermC:
@@ -133,6 +161,19 @@ class VSucc(Value):
     k : Value
     def __repr__(self) -> str:
         return super().__repr__()
+@dataclass(**_dc_attrs)
+class VNil(Value):
+    a : Value
+@dataclass(**_dc_attrs)
+class VCons(Value):
+    a : Value
+    n : Value
+    x : Value
+    xs : Value
+@dataclass(**_dc_attrs)
+class VVec(Value):
+    a : Value
+    n : Value
 
 
 @dataclass(**_dc_attrs)
@@ -147,9 +188,17 @@ class NApp(Neutral):
     v : Value
 @dataclass(**_dc_attrs)
 class NNatElim(Neutral):
+    a  : Value
+    n  : Value
+    x  : Value
+    xs : Neutral
+@dataclass(**_dc_attrs)
+class NVecElim(Neutral):
     v1 : Value
     v2 : Value
     v3 : Value
+    v4 : Value
+    v5 : Value
     n  : Neutral
 
 Type = Value
@@ -181,15 +230,38 @@ def evalI(term : TermI, env : Env) -> Value:
         m, mz, ms, k = (term.e1, term.e2, term.e3, term.e4)
         mzVal = evalC(mz, env)
         msVal = evalC(ms, env)
-        def rec(kVal : Value) -> Value:
+        def rec1(kVal : Value) -> Value:
             if isinstance(kVal, VZero):
                 return mzVal
             elif isinstance(kVal, VSucc):
-                return vapp(vapp(msVal, kVal.k), rec(kVal.k))
+                return vapp(vapp(msVal, kVal.k), rec1(kVal.k))
             elif isinstance(kVal, VNeutral):
                 return VNeutral(NNatElim(evalC(m,env), mzVal, msVal, kVal.n))
             raise TypeError(f"Unknown instance '{type(kVal)}'")
-        return rec(evalC(k, env))
+        return rec1(evalC(k, env))
+    elif isinstance(term, Vec):
+        return VVec(evalC(Vec.a, env), evalC(Vec.n, env))
+    elif isinstance(term, Nil):
+        return VNil(evalC(term.a, env))
+    elif isinstance(term, Cons):
+        return VCons(evalC(term.a, env), evalC(term.n, env),
+                     evalC(term.x, env), evalC(term.xs, env))
+    elif isinstance(term, VecElim):
+        mnVal = evalC(term.mn, env)
+        mcVal = evalC(term.mc, env)
+        a,m,mn,mc,n,xs = (term.a, term.m, term.mn, term.mc, term.n, term.xs)
+        def rec2(nVal : Value, xsVal : Value) -> Value:
+            if isinstance(xsVal, VNil):
+                return mnVal
+            elif isinstance(xsVal, VCons):
+                l,x,xs = (xsVal.n, xsVal.x, xsVal.xs)
+                return fold(vapp, [l,x,xs,rec2(l,xs)], mcVal)
+            elif isinstance(xsVal, VNeutral):
+                return VNeutral(NVecElim(evalC(a, env),
+                                         evalC(m, env),
+                                         mnVal, mcVal, nVal, xsVal.n))
+            raise TypeError(f"Unknown instance '{type(xsVal)}'")
+
     raise TypeError(f"Unknown instance '{type(term)}'")
 
 def vapp(v : Value, v1 : Value) -> Value:
@@ -259,6 +331,42 @@ def typeI(i : int, c : Context, term : TermI) -> Type:
         typeC(i, c, k, VNat())
         kVal = evalC(k, [])
         return vapp(mVal, kVal)
+    elif isinstance(term, Vec):
+        typeC(i,c,term.a, VStar())
+        typeC(i,c,term.n, VNat())
+        return VStar()
+    elif isinstance(term, Nil):
+        typeC(i,c,term.a, VStar())
+        aVal = evalC(term.a, [])
+        return VVec(aVal, VZero())
+    elif isinstance(term, Cons):
+        typeC(i,c,term.a, VStar())
+        aVal = evalC(term.a, [])
+        typeC(i,c,term.n, VNat())
+        kVal = evalC(term.n, [])
+        typeC(i,c,term.x, aVal)
+        typeC(i,c,term.xs, VVec(aVal, kVal))
+        return VVec(aVal, VSucc(kVal))
+    elif isinstance(term, VecElim):
+        a,m,mn,mc,k,vs = (term.a, term.m, term.mn, term.mc, term.n, term.xs)
+        typeC(i,c,a,VStar())
+        aVal = evalC(a, [])
+        typeC(i,c,m, VPi(VNat(), lambda k : VPi(VVec(aVal,k),
+                                     lambda _ : VStar())))
+        mVal = evalC(m, [])
+        typeC(i,c,mn, fold(vapp, [VZero(), VNil(aVal)], mVal))
+        typeC(i,c,mc,
+                VPi(VNat(), lambda l:
+                    VPi(aVal, lambda y:
+                        VPi(VVec(aVal,l), lambda ys:
+                            VPi(fold(vapp, [l,ys], mVal), lambda _:
+                                fold(vapp, [VSucc(l), VCons(aVal,l,y,ys)],
+                                    mVal))))))
+        typeC(i,c,k,VNat())
+        kVal = evalC(k, [])
+        typeC(i,c,vs,VVec(aVal,kVal))
+        vsVal = evalC(vs, [])
+        return fold(vapp, [kVal, vsVal], mVal)
     raise TypeError(f"Unknown instance '{type(term)}'")
 
 def typeC(i : int, c: Context, term : TermC, ty : Type) -> None:
@@ -304,6 +412,18 @@ def substI(i : int, r : TermI, t : TermI) -> TermI:
                        substC(i,r,mz),
                        substC(i,r,ms),
                        substC(i,r,k))
+    elif isinstance(t, Vec):
+        return Vec(substC(i,r,t.a), substC(i,r,t.n))
+    elif isinstance(t, Nil):
+        return Nil(substC(i,r,t.a))
+    elif isinstance(t, Cons):
+        return Cons(substC(i,r,t.a), substC(i,r,t.n),
+                    substC(i,r,t.x), substC(i,r,t.xs))
+    elif isinstance(t,VecElim):
+        a,m,mn,mc,n,xs = (t.a, t.m, t.mn, t.mc, t.n, t.xs)
+        return VecElim(substC(i,r,a), substC(i,r,m),
+                       substC(i,r,mn), substC(i,r,mc),
+                       substC(i,r,n), substC(i,r,xs))
     raise TypeError(f"Unknown instance '{type(t)}'")
 
 def substC(i : int, r : TermI, t : TermC) -> TermC:
