@@ -591,7 +591,7 @@ print(f"type(apply35b)= {typeI0(env35, apply35b)}")
 ##                      (\k rec n -> Succ (rec n))
 ## plus :: Pi (x :: Nat) (y :: Nat) . Nat
 
-plus : TLam[[TermC], TermI] = lambda x : NatElim(
+plusl : TLam[[TermC], TermI] = lambda x : NatElim(
         Lam(pi(Inf(Nat()),Inf(Nat()))),
         Lam(Inf(Bound(0))),
         Lam(
@@ -605,7 +605,8 @@ plus : TLam[[TermC], TermI] = lambda x : NatElim(
         ),
         x
        )
-plusx = Ann(Lam(Inf(NatElim(
+
+Plus = Ann(Lam(Inf(NatElim(
         Lam(pi(Inf(Nat()),Inf(Nat()))),
         Lam(Inf(Bound(0))),
         Lam(
@@ -619,7 +620,7 @@ plusx = Ann(Lam(Inf(NatElim(
         ),
         Inf(Bound(0))
        ))), pi(Inf(Nat()), pi(Inf(Nat()), Inf(Nat()))))
-print("type(plusx)=", typeI0({}, plusx))
+print("type(Plus)=", typeI0({}, Plus))
 
 def int2nat(n : int) -> TermC:
     if n == 0:
@@ -634,7 +635,7 @@ def nval2int(v : Value) -> int:
         return 1 + nval2int(v.k)
     raise TypeError(f"Unknown instance '{type(v)}'")
 
-print("2+2 ->", nval2int(evalI(App(App(plusx, int2nat(2)), int2nat(2)),[])))
+print("2+2 ->", nval2int(evalI(App(App(Plus, int2nat(2)), int2nat(2)),[])))
 #sys.exit(0)
 
 ## > plus 40 2
@@ -644,8 +645,8 @@ print("n40=", n40)
 n2  = int2nat(2)
 print("n2=", n2)
 print("type(n40)=", typeI0({},_cast(Inf,n40).e))
-print("type(plus(n40))=", typeI0({},plus(n40)))
-n42term = App(plus(n40),n2)
+print("type(plusl(n40))=", typeI0({},plusl(n40)))
+n42term = App(plusl(n40),n2)
 print("type(n42term)=", typeI0({}, n42term))
 n42v = evalI(n42term, [])
 print("n42v=", n42v)
@@ -686,13 +687,13 @@ def app(x : TermI, y : TermC) -> TermI:
     return App(x,y)
 
 n1 = int2nat(1)
-n2a = plus(n1) |app| n1
+n2a = plusl(n1) |app| n1
 print("n2a=", n2a)
 print("type(n2a)=", typeI0({}, n2a))
 n2e = evalI(n2a, [])
 print("n2e=", n2e)
 print("n2e=", nval2int(n2e))
-n4 = App(plus(Inf(n2a)), Inf(n2a))
+n4 = App(plusl(Inf(n2a)), Inf(n2a))
 print("n4=", n4, type(n4).__class__)
 print("type(n4)=", typeI0({}, n4))
 print("eval(n4)=", nval2int(evalI(n4,[])))
@@ -713,23 +714,23 @@ print("eval(n4)=", nval2int(evalI(n4,[])))
 ## Cons a 2 x (Cons a 1 x (Cons a 0 y (Nil a))) :: Vec a 3
 
 
-def plus1(x : TermC, y : TermC) -> TermC:
-    return Inf(App(plus(x),y))
+def plus(x : TermC, y : TermC) -> TermC:
+    return Inf(Plus |app| x |app| y)
 
 def bound(i : int) -> TermC:
     return Inf(Bound(i))
 def vec(a : TermC, n : TermC) -> TermC:
     return Inf(Vec(a,n))
 
-append = Ann(Lam(Lam(Lam(Inf(VecElim(
+Append = Ann(Lam(Lam(Lam(Inf(VecElim(
                bound(2),
                Lam(Lam(pi(Inf(Nat()),
                     pi(vec(bound(5),bound(0)),
-                        vec(bound(6), plus1(bound(3),bound(1))))))),
+                        vec(bound(6), plus(bound(3),bound(1))))))),
                Lam(Lam(bound(0))),
                Lam(Lam(Lam(Lam(Lam(Lam(
                    Inf(Cons(bound(8),
-                        plus1(bound(5), bound(1)),
+                        plus(bound(5), bound(1)),
                         bound(4),
                         Inf(App(App(Bound(2),bound(1)),bound(0))))))))))),
                    bound(1), bound(0)))))),
@@ -738,10 +739,10 @@ append = Ann(Lam(Lam(Lam(Inf(VecElim(
                 pi(Inf(Vec(bound(1), bound(0))),
                     pi(Inf(Nat()),
                         pi(Inf(Vec(bound(3), bound(0))),
-                            Inf(Vec(bound(4), plus1(bound(3),bound(1))))))))))
+                            Inf(Vec(bound(4), plus(bound(3),bound(1))))))))))
 
-print("append=", append)
-print("type(append)=", typeI0({}, append))
+print("Append=", Append)
+print("type(Append)=", typeI0({}, Append))
 
 
 env42 : Context
@@ -757,7 +758,7 @@ e42_v1 = Inf(Cons(free("a"),
           int2nat(0),
           free("y"),
           Inf(Nil(free("a")))))
-e42_v3 = append |app| free("a") \
+e42_v3 = Append |app| free("a") \
              |app| int2nat(2) \
              |app| e42_v2 \
              |app| int2nat(1) \
