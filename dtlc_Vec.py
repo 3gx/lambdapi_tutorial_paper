@@ -13,8 +13,8 @@ from typing import Any as TAny, Callable as TLam, List as TList, \
                    TypeVar as TTypeVar, Generic as TGeneric, Tuple as TTuple, \
                    cast as _cast
 import sys
-from dataclasses import dataclass
-import dataclasses as dc
+from mydataclasses import dataclass
+import mydataclasses as dc
 import typeguard
 import functools
 from functools import reduce as fold
