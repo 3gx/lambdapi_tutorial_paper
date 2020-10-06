@@ -50,16 +50,12 @@ class Mydataclasses(Plugin):
                                  ) -> Optional[Callable[[ClassDefContext], None]]:
         from mypy.plugins import attrs
 
-        print(f"++++++++++++++++ {fullname}")
-        sys.stdout.flush()
         if fullname in attrs.attr_class_makers:
             print("A")
-            sys.stdout.flush()
             assert(0)
             return attrs.attr_class_maker_callback
         elif fullname in attrs.attr_dataclass_makers:
             print("B")
-            sys.stdout.flush()
             assert(0)
             return partial(
                 attrs.attr_class_maker_callback,
@@ -153,10 +149,13 @@ class DataclassTransformer:
         if (decorator_arguments['init'] and
                 ('__init__' not in info.names or info.names['__init__'].plugin_generated) and
                 attributes):
+            args=[attr.to_argument() for attr in attributes if attr.is_in_init]
+            print("Xargs= ", args)
+            print([arg.type_annotation for arg in args])
             add_method(
                 ctx,
                 '__init__',
-                args=[attr.to_argument() for attr in attributes if attr.is_in_init],
+                args=args, #[attr.to_argument() for attr in attributes if attr.is_in_init],
                 return_type=NoneType(),
             )
 

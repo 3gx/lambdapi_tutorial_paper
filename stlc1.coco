@@ -1,0 +1,10 @@
+from typing import Union
+from typeguard import typechecked
+
+TermI = Union["Ann", "Bound", "Free", "App"]
+
+data Ann(e : Expr, t : TermI)
+data Bound(e : TermI)
+data Free(x : Name)
+data App(e: TermI, ep : TermC)
+
