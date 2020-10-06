@@ -21,26 +21,28 @@ dataclass_makers = {
     'mydataclasses.dataclass',
 }  # type: Final
 
+from typing_extensions import Final, Type as TypingType
+
 SELF_TVAR_NAME = '_DT'  # type: Final
 
 from functools import partial
 from typing import Callable, Optional, List
-
-from mypy import message_registry
-from mypy.nodes import Expression, StrExpr, IntExpr, DictExpr, UnaryExpr
+#
+#from mypy import message_registry
+#from mypy.nodes import Expression, StrExpr, IntExpr, DictExpr, UnaryExpr
 from mypy.plugin import (
     Plugin, FunctionContext, MethodContext, MethodSigContext, AttributeContext, ClassDefContext,
     CheckerPluginInterface,
 )
-from mypy.plugins.common import try_getting_str_literals
-from mypy.types import (
-    Type, Instance, AnyType, TypeOfAny, CallableType, NoneType, TypedDictType,
-    TypeVarType, TPDICT_FB_NAMES, get_proper_type, LiteralType
-)
-from mypy.subtypes import is_subtype
-from mypy.typeops import make_simplified_union
-from mypy.checkexpr import is_literal_type_like
-
+#from mypy.plugins.common import try_getting_str_literals
+#from mypy.types import (
+#    Type, Instance, AnyType, TypeOfAny, CallableType, NoneType, TypedDictType,
+#    TypeVarType, TPDICT_FB_NAMES, get_proper_type, LiteralType
+#)
+#from mypy.subtypes import is_subtype
+#from mypy.typeops import make_simplified_union
+#from mypy.checkexpr import is_literal_type_like
+#
 
 class Mydataclasses(Plugin):
     def get_class_decorator_hook(self, fullname: str
