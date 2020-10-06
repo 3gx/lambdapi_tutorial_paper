@@ -71,4 +71,55 @@ addpattern def typeI(i is int, ctx is Context, Free(x)):
   else:
     raise LookupError(f"unknown {Free(x)}")
 
+addpattern def typeI(i is int, ctx is Context, App(e, ep)):
+  s = typeI(i,ctx,e)
+  case s:
+    match Fun(t,tp):
+      typeC(i,ctx,ep,t)
+      returm tp
+  else:
+    raise TypeError("Invalid application")
 
+def dict_merge(a : TDict[TAny, TAny],
+               b : TDict[TAny, TAny]) -> TDict[TAny, TAny]:
+    a = a.copy()
+    a.update(b)
+    return a
+
+typeC : int -> Context -> TermC -> Type -> None
+match def typeC(i is int, c is Context, Inf(e), t is Type):
+  tp = typeI(i, context, e)
+  if t != tp:
+    raise TypeError(f"Type mismatch: {t} != {tp}")
+addpattern def typeC(i is int, c is Context, Lam(e), Fun(t,tp)):
+  typeC(i, dict_merge({Local(i): HasType(t)}, c),
+            substC(0, Free(Local(i)), e), tp)
+
+substI : int -> TermI -> TermI -> TermI
+match def substI(i is int, r is TermI, Ann(e, t)) = Ann (substC i r e) t
+addpattern def substI(i is int, r is TermI, Bound(j)) = r if i==j else Bound j
+addpattern def substI(i is int, r is TermI, Free(y)) = Free y
+addpattern def substI(i is int, r is TermI, App(e,ep)) = substI(i,r,App(e, (substC i r ep)))
+
+substC : int -> TermI -> TermC -> TermC
+match def substC(i is int, r is TermI, Inf(e)) = Inf (substI i r e)
+addpattern def substC(i is int, r is TermI, Lam(e)) = Lam (substC (i+1) r e)
+
+quote0 : Value -> TermC
+match def quote0(v is Value) = quote 0 v
+
+quote : Int -> Value -> TermC
+match def quote(i is int, VLam(f)) = Lam (quote (i+1) (f (vfree (Quote i))))
+addpattern def quote(i is int, VNeutral(n)) = Inf (neutralQuote i n)
+
+neutralQuote : Int -> Neutral -> TermI
+match def neutralQuote(i is int, NFree(x)) = boundfree i x
+addpattern def neutralQuote(i is int, NApp(n,v)) = neutralQuote(i,App(n,(quote i v)))
+
+boundfree : Int -> Name -> TermI
+match def boundfree(i is int, Quote(k)) = Bound (i - k - 1)
+addpattern def boundfree(i is int, x is Union[Global, Quote]) = Free x
+
+# example
+
+e0 = quote0 (VLam (x -> VLam (y -> x)))
