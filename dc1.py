@@ -6,4 +6,4 @@ class S:
     y : str
 
 s = S(32, '32')
-print(s)
+print(s, s.x, s.y)

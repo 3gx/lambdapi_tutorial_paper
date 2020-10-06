@@ -44,14 +44,23 @@ from mypy.plugin import (
 #from mypy.checkexpr import is_literal_type_like
 #
 
+import sys
 class Mydataclasses(Plugin):
     def get_class_decorator_hook(self, fullname: str
                                  ) -> Optional[Callable[[ClassDefContext], None]]:
         from mypy.plugins import attrs
 
+        print(f"++++++++++++++++ {fullname}")
+        sys.stdout.flush()
         if fullname in attrs.attr_class_makers:
+            print("A")
+            sys.stdout.flush()
+            assert(0)
             return attrs.attr_class_maker_callback
         elif fullname in attrs.attr_dataclass_makers:
+            print("B")
+            sys.stdout.flush()
+            assert(0)
             return partial(
                 attrs.attr_class_maker_callback,
                 auto_attribs_default=True
@@ -380,6 +389,7 @@ class DataclassTransformer:
 def dataclass_class_maker_callback(ctx: ClassDefContext) -> None:
     """Hooks into the class typechecking process to add support for dataclasses.
     """
+    print("---- ctx=", ctx)
     transformer = DataclassTransformer(ctx)
     transformer.transform()
 
