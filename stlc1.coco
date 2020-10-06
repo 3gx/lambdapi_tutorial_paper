@@ -1,10 +1,74 @@
-from typing import Union
-from typeguard import typechecked
+from typing import Union, Callable as Lam, List, Dict
 
 TermI = Union["Ann", "Bound", "Free", "App"]
+data Ann(o1 : Expr, o2 : TermI)
+data Bound(o1 : TermI)
+data Free(o1 : Name)
+data App(e1: TermI, o2 : TermC)
 
-data Ann(e : Expr, t : TermI)
-data Bound(e : TermI)
-data Free(x : Name)
-data App(e: TermI, ep : TermC)
+TermC = Union["Info", "Lam"]
+data Inf(o1:TermI)
+data Lam(o1:TermC)
+
+Name = Union["Global", "Local", "Quote"]
+data Global(o1 : str)
+data Local(o1 : int)
+data Quote(o1 : int)
+
+Type = Union["TFree","Fun"]
+data TFree(o1 : Name)
+data Fun(o1 : Type, o2: Type)
+
+Value = Union["VLam","VNeutral"]
+data VLam(o1 : Lam[[Value], Value])
+data VNeutral(o1 : Neutral)
+
+Neutral = Union["NFree", "NApp"]
+data NFree(o1 : Name)
+data NApp(o1 : Neutral, o2 : Value)
+
+vfree = n -> VNeutral(NFree(n))
+Env = List[Value]
+
+evalI : TermI -> Env -> Value
+match def evalI(Ann(e, _), e is Env) = evalC e d
+addpattern def evalI(Free(x), d is Env) = vfree x
+addpattern def evalI(Bound(i), d is Env) = d[i]
+addpattern def evalI(App(e,ep), d is Env) = vapp (evalI e d) (evalC e1 d)
+
+vapp : Value -> Value -> Value
+match def vapp(VLam(f), v is Value) = f v
+def vapp(VNeutral(n), v is Value) = VNeutral(NApp n v)
+
+Kind = Union["Star"]
+data Star()
+
+Info = Union["HasKind", "HasType"]
+data HasKind(k : Kind)
+data HasType(t : Type)
+
+
+ntext = Dict[Name,Info]
+
+kindC : Context -> Type -> Kind -> None
+match def kindC(ctx is Context, TFree(x), _ is Star) = ctx[x]
+addpattern def kindC(ctx is Context, Fun(k,kp), _ is Star):
+  kindC(ctx, k, Star())
+  kindC(ctx, k, Star())
+
+typeI0 : Context -> TermI -> Type
+match def typeI0(c is Context, t is TermI) = typeI(0,c,t)
+
+typeI : int -> Context -> TermI -> Type
+match def typeI(i is int, ctx is Context, Ann(e,t)):
+  kindC(ctx, t, Star())
+  typeC(i, ctx, e,t)
+  return t
+addpattern def typeI(i is int, ctx is Context, Free(x)):
+  case ctx[i]:
+    match HasType(t): return t
+    match _ : RuntimeError(f"variable {Free(x)}  is of type {type(ctx[i])}")
+  else:
+    raise LookupError(f"unknown {Free(x)}")
+
 
