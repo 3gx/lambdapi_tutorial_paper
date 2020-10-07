@@ -35,7 +35,8 @@ foldl: TLam[[TAny, TAny, TAny], TAny] = lambda func, acc, xs: functools.reduce(
 _dc_attrs = {"frozen": True, "repr": False}
 
 
-class _match_context:
+_TT = TTypeVar("_TT")
+class _match_context(TGeneric[_TT]):
     class _skip(Exception):
         pass
 
@@ -43,14 +44,14 @@ class _match_context:
         self.skip = not isinstance(obj, cls)
         self.obj = obj
 
-    def __enter__(self) -> TAny:
+    def __enter__(self) -> _TT:
         if self.skip:
             import sys
 
             sys.settrace(lambda *args, **keys: None)
             frame = sys._getframe(1)
             frame.f_trace = self.trace  # type: ignore
-            return None
+            return None # type: ignore
         return self.obj
 
     def trace(self, frame, event, arg):  # type: ignore
@@ -82,7 +83,7 @@ class Unpack:
         string += ")"
         return string
 
-    def __ror__(self, cls: TType[_T]) -> _match_context:
+    def __ror__(self, cls: TType[_T]) -> _match_context[_T]:
         return _match_context(self, cls)
 
 
@@ -481,8 +482,8 @@ def dict_merge(a: TDict[TAny, TAny], b: TDict[TAny, TAny]) -> TDict[TAny, TAny]:
 
 def typeI(i: int, c: Context, term: TermI) -> Type:
     check_argument_types()
-#    with Ann|term as p:
-#        reveal_type(p)
+    with Ann|term as p:
+        reveal_type(p)
     with Ann|term as (e1,e2):
         typeC(i, c, e2, VStar())
         t = evalC(e2, [])
