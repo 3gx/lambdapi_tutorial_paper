@@ -282,30 +282,23 @@ Context = TDict[Name, Type]
 
 def evalI(term : TermI, env : Env) -> Value:
     check_argument_types()
-    if term.classof(Ann):
-        e, _ = term
+    with term.match(Ann) as (e,_):
         return evalC(e, env)
-    if isinstance(term, Free):
-        x, = term
+    with term.match(Free) as (x,):
         return vfree(x)
-    if isinstance(term, Bound):
-        i : int
-        i, = term
+    with term.match(Bound) as (i,):
         return env[i]
-    if isinstance(term, App):
-        e, e1 = term
+    with term.match(App) as (e,e1):
         return vapp(evalI(e, env), evalC(e1, env))
-    if isinstance(term, Star):
+    with term.match(Star):
         return VStar()
-    if isinstance(term, Pi):
-        t,t1 = term
+    with term.match(Pi) as (t,t1):
         return VPi(evalC(t,env), lambda x: evalC(t1, [x] + env))
-    if isinstance(term, Nat):
+    with term.match(Nat):
         return VNat()
-    if isinstance(term, Zero):
+    with term.match(Zero):
         return VZero()
-    if isinstance(term, Succ):
-        k, = term
+    with term.match(Succ) as (k,):
         return VSucc(evalC(k, env))
     with term.match(NatElim) as (m, mz, ms, k):
         mzVal = evalC(mz, env)
@@ -320,8 +313,7 @@ def evalI(term : TermI, env : Env) -> Value:
                 return VNeutral(NNatElim(evalC(m,env), mzVal, msVal, kVal.n))
             raise TypeError(f"Unknown instance '{type(kVal)}'")
         return rec1(evalC(k, env))
-    if isinstance(term, Vec):
-        a, n = term
+    with term.match(Vec) as (a,n):
         return VVec(evalC(a, env), evalC(n, env))
     if isinstance(term, Nil):
         a, = term
