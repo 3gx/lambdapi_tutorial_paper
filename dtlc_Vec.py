@@ -64,6 +64,7 @@ class _match_context:
 
 
 class Unpack:
+    _T = TTypeVar("_T")
     def __iter__(self) -> TIter[TAny]:
         yield from [getattr(self, field.name) for field in _dc.fields(self)]
 
@@ -81,7 +82,7 @@ class Unpack:
         string += ")"
         return string
 
-    def __ror__(self, cls: TAny) -> TAny:
+    def __ror__(self, cls: TType[_T]) -> _match_context:
         return _match_context(self, cls)
 
 
@@ -480,6 +481,8 @@ def dict_merge(a: TDict[TAny, TAny], b: TDict[TAny, TAny]) -> TDict[TAny, TAny]:
 
 def typeI(i: int, c: Context, term: TermI) -> Type:
     check_argument_types()
+#    with Ann|term as p:
+#        reveal_type(p)
     with Ann|term as (e1,e2):
         typeC(i, c, e2, VStar())
         t = evalC(e2, [])
@@ -487,30 +490,27 @@ def typeI(i: int, c: Context, term: TermI) -> Type:
         return t
     with Free|term as (x,):
         return c[x]
-    if isinstance(term, App):
-        e1, e2 = term
+    with App|term as (e1,e2):
         s = typeI(i, c, e1)
         if isinstance(s, VPi):
             typeC(i, c, e2, s.v)
             return s.f(evalC(e2, []))
-    if isinstance(term, Star):
+    with Star|term:
         return VStar()
-    if isinstance(term, Pi):
-        p, p1 = term
+    with Pi|term as (p,p1):
         typeC(i, c, p, VStar())
         t = evalC(p, [])
         typeC(
             i + 1, dict_merge({Local(i): t}, c), substC(0, Free(Local(i)), p1), VStar()
         )
         return VStar()
-    if isinstance(term, Nat):
+    with Nat|term:
         return VStar()
-    if isinstance(term, Zero):
+    with Zero|term:
         return VNat()
-    if isinstance(term, Succ):
+    with Succ|term:
         return VNat()
-    if isinstance(term, NatElim):
-        m, mz, ms, k = term
+    with NatElim|term as (m,mz,ms,k):
         typeC(i, c, m, VPi(VNat(), lambda _: VStar()))
         mVal = evalC(m, [])
         typeC(i, c, mz, vapp(mVal, VZero()))
@@ -523,18 +523,15 @@ def typeI(i: int, c: Context, term: TermI) -> Type:
         typeC(i, c, k, VNat())
         kVal = evalC(k, [])
         return vapp(mVal, kVal)
-    if isinstance(term, Vec):
-        a, n = term
+    with Vec|term as (a,n):
         typeC(i, c, a, VStar())
         typeC(i, c, n, VNat())
         return VStar()
-    if isinstance(term, Nil):
-        (a,) = term
+    with Nil|term as (a,):
         typeC(i, c, a, VStar())
         aVal = evalC(a, [])
         return VVec(aVal, VZero())
-    if isinstance(term, Cons):
-        a, k, x, xs = term
+    with Cons|term as (a,k,x,xs):
         typeC(i, c, a, VStar())
         aVal = evalC(a, [])
         typeC(i, c, k, VNat())
@@ -542,8 +539,7 @@ def typeI(i: int, c: Context, term: TermI) -> Type:
         typeC(i, c, x, aVal)
         typeC(i, c, xs, VVec(aVal, kVal))
         return VVec(aVal, VSucc(kVal))
-    if isinstance(term, VecElim):
-        a, m, mn, mc, k, vs = term
+    with VecElim|term as (a,m,mn,mc,k,vs):
         typeC(i, c, a, VStar())
         aVal = evalC(a, [])
         typeC(i, c, m, VPi(VNat(), lambda k: VPi(VVec(aVal, k), lambda _: VStar())))
