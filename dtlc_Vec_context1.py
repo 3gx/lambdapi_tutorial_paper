@@ -105,8 +105,16 @@ class ADT:
         string += ")"
         return string
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):  # type: ignore
+        pass
+
     def __rshift__(self, cls: TType[_T]) -> MatchContext[_T]:
-        return MatchContext(self, cls)
+        if not isinstance(self,cls):
+            raise MatchContext._skip
+        return self 
 
 
 check_types = True
@@ -1005,7 +1013,7 @@ print("eval(ev42_v3)=", evalI(e42_v3, []))
 
 import time
 t1 = time.time()
-for i in range(100):
+for i in range(1000):
     evalI(e42_v3,[])
 t2 = time.time()
 print(t2-t1)

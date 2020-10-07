@@ -832,7 +832,7 @@ print("eval(ev42_v3)=", evalI(e42_v3, []))
 
 import time
 t1 = time.time()
-for i in range(100):
+for i in range(1000):
     evalI(e42_v3,[])
 t2 = time.time()
 print(t2-t1)
