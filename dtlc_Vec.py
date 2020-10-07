@@ -21,6 +21,32 @@ from functools import reduce as fold
 foldl : TLam[[TAny, TAny, TAny], TAny] = lambda func, acc, xs: functools.reduce(func, xs, acc)
 
 _dc_attrs = {"frozen": True, "repr": False}
+class _match_context:
+    class _skip(Exception): pass
+
+    def __init__(self, obj : TAny, cls : TAny):
+        self.skip = not isinstance(obj, cls)
+        self.obj = obj
+
+    def __enter__(self) -> TAny:
+        if self.skip:
+            import sys
+            sys.settrace(lambda *args, **keys: None)
+            frame = sys._getframe(1)
+            frame.f_trace = self.trace # type: ignore
+            return None
+        return self.obj
+
+    def trace(self, frame, event, arg): #type: ignore
+        raise _match_context._skip()
+
+    def __exit__(self, type, value, traceback): #type: ignore
+        if type is None:
+            return  # No exception
+        if issubclass(type, _match_context._skip):
+            return True  # Suppress special SkipWithBlock exception
+
+
 
 class Unpack:
     def __iter__(self) -> TIter[TAny]:
@@ -40,6 +66,9 @@ class Unpack:
         return string
     def classof(self, cls : TAny) -> bool:
         return isinstance(self, cls)
+
+    def match(self, cls : TAny) -> TAny:
+        return _match_context(self, cls)
 
 
 
@@ -251,34 +280,6 @@ Env = TList[Value]
 Context = TDict[Name, Type]
 
 
-class _match:
-    class _skip(Exception): pass
-
-    def __init__(self, obj : TAny, cls : TAny):
-        self.skip = not isinstance(obj, cls)
-        self.obj = obj
-
-    def __enter__(self) -> TAny:
-        if self.skip:
-            import sys
-            sys.settrace(lambda *args, **keys: None)
-            frame = sys._getframe(1)
-            frame.f_trace = self.trace # type: ignore
-            return None
-        return self.obj
-
-    def trace(self, frame, event, arg): #type: ignore
-        raise _match._skip()
-
-    def __exit__(self, type, value, traceback): #type: ignore
-        if type is None:
-            return  # No exception
-        if issubclass(type, _match._skip):
-            return True  # Suppress special SkipWithBlock exception
-
-
-
-
 def evalI(term : TermI, env : Env) -> Value:
     check_argument_types()
     if term.classof(Ann):
@@ -306,7 +307,7 @@ def evalI(term : TermI, env : Env) -> Value:
     if isinstance(term, Succ):
         k, = term
         return VSucc(evalC(k, env))
-    with _match(term, NatElim) as (m, mz, ms, k):
+    with term.match(NatElim) as (m, mz, ms, k):
         mzVal = evalC(mz, env)
         msVal = evalC(ms, env)
         def rec1(kVal : Value) -> Value:
