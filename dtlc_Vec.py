@@ -66,7 +66,7 @@ class _match_context(TGeneric[_match_contextT]):
             return True  # Suppress special SkipWithBlock exception
 
 
-class Unpack:
+class ADT:
     _T = TTypeVar("_T")
 
     def __iter__(self) -> TIter[TAny]:
@@ -137,25 +137,25 @@ TermI = TUnion[
 
 
 @dataclass(**_dc_attrs)
-class Ann(Unpack):
+class Ann(ADT):
     e1: TermC
     e2: TermC
 
 
 @dataclass(**_dc_attrs)
-class Star(Unpack):
+class Star(ADT):
     def __repr__(self) -> str:
         return f"*"
 
 
 @dataclass(**_dc_attrs)
-class Pi(Unpack):
+class Pi(ADT):
     e1: TermC
     e2: TermC
 
 
 @dataclass(**_dc_attrs)
-class Bound(Unpack):
+class Bound(ADT):
     i: int
 
     def __repr__(self) -> str:
@@ -163,7 +163,7 @@ class Bound(Unpack):
 
 
 @dataclass(**_dc_attrs)
-class Free(Unpack):
+class Free(ADT):
     x: Name
 
     def __repr__(self) -> str:
@@ -171,19 +171,19 @@ class Free(Unpack):
 
 
 @dataclass(**_dc_attrs)
-class App(Unpack):
+class App(ADT):
     e1: TermI
     e2: TermC
 
 
 @dataclass(**_dc_attrs)
-class Nat(Unpack):
+class Nat(ADT):
     def __repr__(self) -> str:
         return "Nat"
 
 
 @dataclass(**_dc_attrs)
-class NatElim(Unpack):
+class NatElim(ADT):
     e1: TermC
     e2: TermC
     e3: TermC
@@ -191,13 +191,13 @@ class NatElim(Unpack):
 
 
 @dataclass(**_dc_attrs)
-class Zero(Unpack):
+class Zero(ADT):
     def __repr__(self) -> str:
         return "Zero"
 
 
 @dataclass(**_dc_attrs)
-class Succ(Unpack):
+class Succ(ADT):
     k: TermC
 
     def __repr__(self) -> str:
@@ -205,7 +205,7 @@ class Succ(Unpack):
 
 
 @dataclass(**_dc_attrs)
-class Vec(Unpack):
+class Vec(ADT):
     a: TermC
     n: TermC
 
@@ -214,7 +214,7 @@ class Vec(Unpack):
 
 
 @dataclass(**_dc_attrs)
-class Nil(Unpack):
+class Nil(ADT):
     a: TermC
 
     def __repr__(self) -> str:
@@ -222,7 +222,7 @@ class Nil(Unpack):
 
 
 @dataclass(**_dc_attrs)
-class Cons(Unpack):
+class Cons(ADT):
     a: TermC
     n: TermC
     x: TermC
@@ -233,7 +233,7 @@ class Cons(Unpack):
 
 
 @dataclass(**_dc_attrs)
-class VecElim(Unpack):
+class VecElim(ADT):
     a: TermC
     m: TermC
     mn: TermC
@@ -246,7 +246,7 @@ TermC = TUnion["Inf", "Lam"]
 
 
 @dataclass(**_dc_attrs)
-class Inf(Unpack):
+class Inf(ADT):
     e: TermI
 
     def __repr__(self) -> str:
@@ -254,7 +254,7 @@ class Inf(Unpack):
 
 
 @dataclass(**_dc_attrs)
-class Lam(Unpack):
+class Lam(ADT):
     e: TermC
 
 
@@ -262,7 +262,7 @@ Name = TUnion["Global", "Local", "Quote"]
 
 
 @dataclass(**_dc_attrs)
-class Global(Unpack):
+class Global(ADT):
     str_: str
 
     def __repr__(self) -> str:
@@ -270,12 +270,12 @@ class Global(Unpack):
 
 
 @dataclass(**_dc_attrs)
-class Local(Unpack):
+class Local(ADT):
     i: int
 
 
 @dataclass(**_dc_attrs)
-class Quote(Unpack):
+class Quote(ADT):
     i: int
 
 
@@ -284,7 +284,7 @@ _VFunT = TUnion[Box[_VFunT0], _VFunT0]
 
 
 @dataclass(**_dc_attrs)
-class VLam(Unpack):
+class VLam(ADT):
     f: _VFunT
 
     def __repr__(self) -> str:
@@ -292,18 +292,18 @@ class VLam(Unpack):
 
 
 @dataclass(**_dc_attrs)
-class VNeutral(Unpack):
+class VNeutral(ADT):
     n: Neutral
 
 
 @dataclass(**_dc_attrs)
-class VStar(Unpack):
+class VStar(ADT):
     def __repr__(self) -> str:
         return f"*"
 
 
 @dataclass(**_dc_attrs)
-class VPi(Unpack):
+class VPi(ADT):
     v: Value
     f: _VFunT
 
@@ -312,17 +312,17 @@ class VPi(Unpack):
 
 
 @dataclass(**_dc_attrs)
-class VNat(Unpack):
+class VNat(ADT):
     pass
 
 
 @dataclass(**_dc_attrs)
-class VZero(Unpack):
+class VZero(ADT):
     pass
 
 
 @dataclass(**_dc_attrs)
-class VSucc(Unpack):
+class VSucc(ADT):
     k: Value
 
     def __repr__(self) -> str:
@@ -330,7 +330,7 @@ class VSucc(Unpack):
 
 
 @dataclass(**_dc_attrs)
-class VNil(Unpack):
+class VNil(ADT):
     a: Value
 
     def __repr__(self) -> str:
@@ -338,7 +338,7 @@ class VNil(Unpack):
 
 
 @dataclass(**_dc_attrs)
-class VCons(Unpack):
+class VCons(ADT):
     a: Value
     n: Value
     x: Value
@@ -349,7 +349,7 @@ class VCons(Unpack):
 
 
 @dataclass(**_dc_attrs)
-class VVec(Unpack):
+class VVec(ADT):
     a: Value
     n: Value
 
@@ -364,18 +364,18 @@ Neutral = TUnion["NFree", "NApp", "NNatElim", "NVecElim"]
 
 
 @dataclass(**_dc_attrs)
-class NFree(Unpack):
+class NFree(ADT):
     x: Name
 
 
 @dataclass(**_dc_attrs)
-class NApp(Unpack):
+class NApp(ADT):
     n: Neutral
     v: Value
 
 
 @dataclass(**_dc_attrs)
-class NNatElim(Unpack):
+class NNatElim(ADT):
     a: Value
     n: Value
     x: Value
@@ -383,7 +383,7 @@ class NNatElim(Unpack):
 
 
 @dataclass(**_dc_attrs)
-class NVecElim(Unpack):
+class NVecElim(ADT):
     v1: Value
     v2: Value
     v3: Value
