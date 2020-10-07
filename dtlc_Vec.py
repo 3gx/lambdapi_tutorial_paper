@@ -847,10 +847,9 @@ class Infix(object):
 @Infix
 def app(x: TermI, y: TermC) -> TermI:
     return App(x, y)
-
-
 n1 = int2nat(1)
 n2a = plusl(n1) | app | n1
+
 print("n2a=", n2a)
 print("type(n2a)=", typeI0({}, n2a))
 n2e = evalI(n2a, [])
@@ -878,7 +877,7 @@ print("eval(n4)=", nval2int(evalI(n4, [])))
 
 
 def plus(x: TermC, y: TermC) -> TermC:
-    return Inf(Plus | app | x | app | y)
+    return Inf(App(App(Plus, x), y))
 
 
 def bound(i: int) -> TermC:
@@ -977,18 +976,8 @@ e42_v2 = Inf(
     )
 )
 e42_v1 = Inf(Cons(free("a"), int2nat(0), free("y"), Inf(Nil(free("a")))))
-e42_v3 = (
-    Append
-    | app
-    | free("a")
-    | app
-    | int2nat(2)
-    | app
-    | e42_v2
-    | app
-    | int2nat(1)
-    | app
-    | e42_v1
+e42_v3 = App(
+    App(App(App(App(Append, free("a")), int2nat(2)), e42_v2), int2nat(1)), e42_v1
 )
 
 print("e42_v3=", e42_v3)
