@@ -480,14 +480,12 @@ def dict_merge(a: TDict[TAny, TAny], b: TDict[TAny, TAny]) -> TDict[TAny, TAny]:
 
 def typeI(i: int, c: Context, term: TermI) -> Type:
     check_argument_types()
-    if isinstance(term, Ann):
-        e1, e2 = term
+    with Ann|term as (e1,e2):
         typeC(i, c, e2, VStar())
         t = evalC(e2, [])
         typeC(i, c, e1, t)
         return t
-    if isinstance(term, Free):
-        (x,) = term
+    with Free|term as (x,):
         return c[x]
     if isinstance(term, App):
         e1, e2 = term
