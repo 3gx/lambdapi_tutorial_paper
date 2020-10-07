@@ -38,6 +38,8 @@ class Unpack:
                 string += ","
         string += ")"
         return string
+    def classof(self, cls : TAny) -> bool:
+        return isinstance(self, cls)
 
 
 
@@ -248,68 +250,96 @@ vfree : TLam[[Name],Value] = lambda n :  VNeutral(NFree(n))
 Env = TList[Value]
 Context = TDict[Name, Type]
 
+
+class _match:
+    class _skip(Exception): pass
+
+    def __init__(self, obj : TAny, cls : TAny):
+        self.skip = not isinstance(obj, cls)
+        self.obj = obj
+
+    def __enter__(self) -> TAny:
+        if self.skip:
+            import sys
+            sys.settrace(lambda *args, **keys: None)
+            frame = sys._getframe(1)
+            frame.f_trace = self.trace # type: ignore
+            return None
+        return self.obj
+
+    def trace(self, frame, event, arg): #type: ignore
+        raise _match._skip()
+
+    def __exit__(self, type, value, traceback): #type: ignore
+        if type is None:
+            return  # No exception
+        if issubclass(type, _match._skip):
+            return True  # Suppress special SkipWithBlock exception
+
+
+
+
 def evalI(term : TermI, env : Env) -> Value:
     check_argument_types()
-    if isinstance(term, Ann):
+    if term.classof(Ann):
         e, _ = term
         return evalC(e, env)
-    elif isinstance(term, Free):
+    if isinstance(term, Free):
         x, = term
         return vfree(x)
-    elif isinstance(term, Bound):
+    if isinstance(term, Bound):
         i : int
         i, = term
         return env[i]
-    elif isinstance(term, App):
+    if isinstance(term, App):
         e, e1 = term
         return vapp(evalI(e, env), evalC(e1, env))
-    elif isinstance(term, Star):
+    if isinstance(term, Star):
         return VStar()
-    elif isinstance(term, Pi):
+    if isinstance(term, Pi):
         t,t1 = term
         return VPi(evalC(t,env), lambda x: evalC(t1, [x] + env))
-    elif isinstance(term, Nat):
+    if isinstance(term, Nat):
         return VNat()
-    elif isinstance(term, Zero):
+    if isinstance(term, Zero):
         return VZero()
-    elif isinstance(term, Succ):
+    if isinstance(term, Succ):
         k, = term
         return VSucc(evalC(k, env))
-    elif isinstance(term, NatElim):
-        m, mz, ms, k = term
+    with _match(term, NatElim) as (m, mz, ms, k):
         mzVal = evalC(mz, env)
         msVal = evalC(ms, env)
         def rec1(kVal : Value) -> Value:
             #check_argument_types() # fails (yikes)
             if isinstance(kVal, VZero):
                 return mzVal
-            elif isinstance(kVal, VSucc):
+            if isinstance(kVal, VSucc):
                 return vapp(vapp(msVal, kVal.k), rec1(kVal.k))
-            elif isinstance(kVal, VNeutral):
+            if isinstance(kVal, VNeutral):
                 return VNeutral(NNatElim(evalC(m,env), mzVal, msVal, kVal.n))
             raise TypeError(f"Unknown instance '{type(kVal)}'")
         return rec1(evalC(k, env))
-    elif isinstance(term, Vec):
+    if isinstance(term, Vec):
         a, n = term
         return VVec(evalC(a, env), evalC(n, env))
-    elif isinstance(term, Nil):
+    if isinstance(term, Nil):
         a, = term
         return VNil(evalC(a, env))
-    elif isinstance(term, Cons):
+    if isinstance(term, Cons):
         a, n, x, xs = term
         return VCons(evalC(a, env), evalC(n, env),
                      evalC(x, env), evalC(xs, env))
-    elif isinstance(term, VecElim):
+    if isinstance(term, VecElim):
         a, m, mn, mc, n, xs = term
         mnVal = evalC(mn, env)
         mcVal = evalC(mc, env)
         def rec2(nVal : Value, xsVal : Value) -> Value:
             if isinstance(xsVal, VNil):
                 return mnVal
-            elif isinstance(xsVal, VCons):
+            if isinstance(xsVal, VCons):
                 l,x,xs = (xsVal.n, xsVal.x, xsVal.xs)
                 return fold(vapp, [l,x,xs,rec2(l,xs)], mcVal)
-            elif isinstance(xsVal, VNeutral):
+            if isinstance(xsVal, VNeutral):
                 return VNeutral(NVecElim(evalC(a, env),
                                          evalC(m, env),
                                          mnVal, mcVal, nVal, xsVal.n))
