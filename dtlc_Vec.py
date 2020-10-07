@@ -460,11 +460,6 @@ def typeI0(c: Context, term: TermI) -> Type:
     return typeI(0, c, term)
 
 
-def dict_merge(a: TDict[TAny, TAny], b: TDict[TAny, TAny]) -> TDict[TAny, TAny]:
-    a = a.copy()
-    a.update(b)
-    return a
-
 
 def typeI(i: int, c: Context, term: TermI) -> Type:
     #    with _pm, Ann|term as p:
@@ -488,7 +483,7 @@ def typeI(i: int, c: Context, term: TermI) -> Type:
         typeC(i, c, p, VStar())
         t = evalC(p, [])
         typeC(
-            i + 1, dict_merge({Local(i): t}, c), substC(0, Free(Local(i)), p1), VStar()
+            i + 1, {Local(i): t, **c}, substC(0, Free(Local(i)), p1), VStar()
         )
         return VStar()
     with _pm, term >> Nat:
@@ -570,7 +565,7 @@ def typeC(i: int, c: Context, term: TermC, type_: Type) -> None:
     with _pm, term >> Lam as (e,), type_ >> VPi as (t, tp):
         typeC(
             i + 1,
-            dict_merge({Local(i): t}, c),
+            {Local(i): t, **c},
             substC(0, Free(Local(i)), e),
             tp(vfree(Local(i))),
         )
