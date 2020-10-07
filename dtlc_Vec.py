@@ -138,7 +138,6 @@ class Ann(Unpack):
     e1: TermC
     e2: TermC
 
-
 @dataclass(**_dc_attrs)
 class Star(Unpack):
     def __repr__(self) -> str:
@@ -492,9 +491,10 @@ def typeI(i: int, c: Context, term: TermI) -> Type:
         return c[x]
     with App|term as (e1,e2):
         s = typeI(i, c, e1)
-        if isinstance(s, VPi):
-            typeC(i, c, e2, s.v)
-            return s.f(evalC(e2, []))
+        with VPi|s as (v,f):
+            typeC(i, c, e2, v)
+            return f(evalC(e2, []))
+        raise TypeError(f"Illegal application: {e1}({e2})")
     with Star|term:
         return VStar()
     with Pi|term as (p,p1):
@@ -646,49 +646,47 @@ def quote0(v: Value) -> TermC:
     return quote(0, v)
 
 
-def quote(i: int, v: Value) -> TermC:
-    if isinstance(v, VLam):
-        return Lam(quote(i + 1, v.f(vfree(Quote(i)))))
-    if isinstance(v, VNeutral):
-        return Inf(neutralQuote(i, v.n))
-    if isinstance(v, VStar):
+def quote(i: int, value: Value) -> TermC:
+    with VLam|value as (f,):
+        return Lam(quote(i + 1, f(vfree(Quote(i)))))
+    with VNeutral|value as (n,):
+        return Inf(neutralQuote(i, n))
+    with VStar|value:
         return Inf(Star())
-    if isinstance(v, VPi):
-        return Inf(Pi(quote(i, v.v), quote(i + 1, v.f(vfree(Quote(i))))))
-    if isinstance(v, VNat):
+    with VPi|value as (v,f):
+        return Inf(Pi(quote(i, v), quote(i + 1, f(vfree(Quote(i))))))
+    with VNat|value:
         return Inf(Nat())
-    if isinstance(v, VZero):
+    with VZero|value:
         return Inf(Zero())
-    if isinstance(v, VSucc):
-        return Inf(Succ(quote(i, v.k)))
-    if isinstance(v, VNil):
-        return Inf(Nil(quote(i, v.a)))
-    if isinstance(v, VVec):
-        return Inf(Vec(quote(i, v.a), quote(i, v.n)))
-    if isinstance(v, VCons):
-        return Inf(Cons(quote(i, v.a), quote(i, v.n), quote(i, v.x), quote(i, v.xs)))
-    raise TypeError(f"Unknown instance '{type(v)}'")
+    with VSucc|value as (k,):
+        return Inf(Succ(quote(i, k)))
+    with VNil|value as (a,):
+        return Inf(Nil(quote(i, a)))
+    with VVec|value as (a,n):
+        return Inf(Vec(quote(i, a), quote(i, n)))
+    with VCons|value as (a,n,x,xs):
+        return Inf(Cons(quote(i, a), quote(i, n), quote(i, x), quote(i, xs)))
+    raise TypeError(f"Unknown instance '{type(value)}'")
 
 
-def neutralQuote(i: int, n: Neutral) -> TermI:
-    check_argument_types()
-    if isinstance(n, NFree):
-        return boundfree(i, n.x)
-    if isinstance(n, NApp):
-        return App(neutralQuote(i, n.n), quote(i, n.v))
-    if isinstance(n, NNatElim):
+def neutralQuote(i: int, neutral: Neutral) -> TermI:
+    with NFree|neutral as (x,):
+        return boundfree(i, x)
+    with NApp|neutral as (n,v):
+        return App(neutralQuote(i, n), quote(i, v))
+    with NNatElim|neutral as (a,n,x,xs):
         return NatElim(
-            quote(i, n.a), quote(i, n.n), quote(i, n.x), Inf(neutralQuote(i, n.xs))
+            quote(i, a), quote(i, n), quote(i, x), Inf(neutralQuote(i, xs))
         )
-    raise TypeError(f"Unknown instance '{type(n)}'")
+    raise TypeError(f"Unknown instance '{type(neutral)}'")
 
 
 def boundfree(i: int, x: Name) -> TermI:
     check_argument_types()
-    if isinstance(x, Quote):
-        return Bound(i - x.i - 1)
-    else:
-        return Free(x)
+    with Quote|x as (i,):
+        return Bound(i - i - 1)
+    return Free(x)
 
 
 ###############################################################################
