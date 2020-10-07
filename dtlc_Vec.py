@@ -454,38 +454,46 @@ def typeC(i : int, c: Context, term : TermC, type_ : Type) -> None:
 def substI(i : int, r : TermI, t : TermI) -> TermI:
     check_argument_types()
     if isinstance(t, Ann):
-        return Ann(substC(i,r,t.e1), t.e2)
+        e1,e2 = t
+        return Ann(substC(i,r,e1), e2)
     elif isinstance(t, Bound):
-        return r if i == t.i else t
+        j, = t
+        return r if i == j else Bound(j)
     elif isinstance(t, Free):
         return t
     elif isinstance(t, App):
-        return App(substI(i,r,t.e1), substC(i,r,t.e2))
+        e1,e2 = t
+        return App(substI(i,r,e1), substC(i,r,e2))
     elif isinstance(t, Star):
         return Star()
     elif isinstance(t, Pi):
-        return Pi(substC(i,r,t.e1), substC(i+1, r, t.e2))
+        f, v = t
+        return Pi(substC(i,r,f), substC(i+1, r, v))
     elif isinstance(t, Nat):
         return Nat()
     elif isinstance(t, Zero):
         return Zero()
     elif isinstance(t, Succ):
-        return Succ(substC(i,r,t.k))
+        k, = t
+        return Succ(substC(i,r,k))
     elif isinstance(t, NatElim):
-        m, mz, ms, k = (t.e1, t.e2, t.e3, t.e4)
+        m, mz, ms, k = t
         return NatElim(substC(i,r,m),
                        substC(i,r,mz),
                        substC(i,r,ms),
                        substC(i,r,k))
     elif isinstance(t, Vec):
-        return Vec(substC(i,r,t.a), substC(i,r,t.n))
+        a,n = t
+        return Vec(substC(i,r,a), substC(i,r,n))
     elif isinstance(t, Nil):
-        return Nil(substC(i,r,t.a))
+        a, = t
+        return Nil(substC(i,r,a))
     elif isinstance(t, Cons):
-        return Cons(substC(i,r,t.a), substC(i,r,t.n),
-                    substC(i,r,t.x), substC(i,r,t.xs))
+        a,n,x,xs = t
+        return Cons(substC(i,r,a), substC(i,r,n),
+                    substC(i,r,x), substC(i,r,xs))
     elif isinstance(t,VecElim):
-        a,m,mn,mc,n,xs = (t.a, t.m, t.mn, t.mc, t.n, t.xs)
+        a,m,mn,mc,n,xs = t
         return VecElim(substC(i,r,a), substC(i,r,m),
                        substC(i,r,mn), substC(i,r,mc),
                        substC(i,r,n), substC(i,r,xs))
@@ -496,7 +504,8 @@ def substC(i : int, r : TermI, t : TermC) -> TermC:
     if isinstance(t, Inf):
         return Inf(substI(i,r,t.e))
     elif isinstance(t, Lam):
-        return Lam(substC(i+1, r, t.e))
+        e, = t
+        return Lam(substC(i+1, r, e))
     raise TypeError(f"Unknown instance '{type(t)}'")
 
 def quote0(v : Value) -> TermC:
