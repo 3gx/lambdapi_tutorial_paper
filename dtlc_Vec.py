@@ -36,6 +36,8 @@ _dc_attrs = {"frozen": True, "repr": False}
 
 
 _match_contextT = TTypeVar("_match_contextT")
+
+
 class _match_context(TGeneric[_match_contextT]):
     class _skip(Exception):
         pass
@@ -51,7 +53,7 @@ class _match_context(TGeneric[_match_contextT]):
             sys.settrace(lambda *args, **keys: None)
             frame = sys._getframe(1)
             frame.f_trace = self.trace  # type: ignore
-            return None # type: ignore
+            return None  # type: ignore
         return self.obj
 
     def trace(self, frame, event, arg):  # type: ignore
@@ -66,6 +68,7 @@ class _match_context(TGeneric[_match_contextT]):
 
 class Unpack:
     _T = TTypeVar("_T")
+
     def __iter__(self) -> TIter[TAny]:
         yield from [getattr(self, field.name) for field in _dc.fields(self)]
 
@@ -137,6 +140,7 @@ TermI = TUnion[
 class Ann(Unpack):
     e1: TermC
     e2: TermC
+
 
 @dataclass(**_dc_attrs)
 class Star(Unpack):
@@ -395,54 +399,54 @@ Context = TDict[Name, Type]
 
 
 def evalI(term: TermI, env: Env) -> Value:
-    with Ann|term as (e, _):
+    with Ann | term as (e, _):
         return evalC(e, env)
-    with Free|term as (x,):
+    with Free | term as (x,):
         return vfree(x)
-    with Bound|term as (i,):
+    with Bound | term as (i,):
         return env[i]
-    with App|term as (e, e1):
+    with App | term as (e, e1):
         return vapp(evalI(e, env), evalC(e1, env))
-    with Star|term:
+    with Star | term:
         return VStar()
-    with Pi|term as (t, t1):
+    with Pi | term as (t, t1):
         return VPi(evalC(t, env), lambda x: evalC(t1, [x] + env))
-    with Nat|term:
+    with Nat | term:
         return VNat()
-    with Zero|term:
+    with Zero | term:
         return VZero()
-    with Succ|term as (k,):
+    with Succ | term as (k,):
         return VSucc(evalC(k, env))
-    with NatElim|term as (m, mz, ms, k):
+    with NatElim | term as (m, mz, ms, k):
         mzVal = evalC(mz, env)
         msVal = evalC(ms, env)
 
         def rec1(kVal: Value) -> Value:
-            with VZero|kVal:
+            with VZero | kVal:
                 return mzVal
-            with VSucc|kVal as (k,):
+            with VSucc | kVal as (k,):
                 return vapp(vapp(msVal, k), rec1(k))
-            with VNeutral|kVal as (n,):
+            with VNeutral | kVal as (n,):
                 return VNeutral(NNatElim(evalC(m, env), mzVal, msVal, n))
             raise TypeError(f"Unknown instance '{type(kVal)}'")
 
         return rec1(evalC(k, env))
-    with Vec|term as (a, n):
+    with Vec | term as (a, n):
         return VVec(evalC(a, env), evalC(n, env))
-    with Nil|term as (a,):
+    with Nil | term as (a,):
         return VNil(evalC(a, env))
-    with Cons|term as (a,n,x,xs):
+    with Cons | term as (a, n, x, xs):
         return VCons(evalC(a, env), evalC(n, env), evalC(x, env), evalC(xs, env))
-    with VecElim|term as (a,m,mn,mc,n,xs):
+    with VecElim | term as (a, m, mn, mc, n, xs):
         mnVal = evalC(mn, env)
         mcVal = evalC(mc, env)
 
         def rec2(nVal: Value, xsVal: Value) -> Value:
-            with VNil|xsVal:
+            with VNil | xsVal:
                 return mnVal
-            with VCons|xsVal as (_, l, x, xs):
+            with VCons | xsVal as (_, l, x, xs):
                 return fold(vapp, [l, x, xs, rec2(l, xs)], mcVal)
-            with VNeutral|xsVal as (n,):
+            with VNeutral | xsVal as (n,):
                 return VNeutral(
                     NVecElim(evalC(a, env), evalC(m, env), mnVal, mcVal, nVal, n)
                 )
@@ -453,17 +457,17 @@ def evalI(term: TermI, env: Env) -> Value:
 
 
 def vapp(value: Value, v: Value) -> Value:
-    with VLam|value as (f,):
+    with VLam | value as (f,):
         return f(v)
-    with VNeutral|value as (n,):
+    with VNeutral | value as (n,):
         return VNeutral(NApp(n, v))
     raise TypeError(f"Unknown instance '{type(v)}'")
 
 
 def evalC(term: TermC, env: Env) -> Value:
-    with Inf|term as (e,):
+    with Inf | term as (e,):
         return evalI(e, env)
-    with Lam|term as (lam_expr,):
+    with Lam | term as (lam_expr,):
         return VLam(lambda x: evalC(lam_expr, [x] + env))
     raise TypeError(f"Unknown instance '{type(term)}'")
 
@@ -480,37 +484,37 @@ def dict_merge(a: TDict[TAny, TAny], b: TDict[TAny, TAny]) -> TDict[TAny, TAny]:
 
 
 def typeI(i: int, c: Context, term: TermI) -> Type:
-#    with Ann|term as p:
-#        reveal_type(p)
-    with Ann|term as (e1,e2):
+    #    with Ann|term as p:
+    #        reveal_type(p)
+    with Ann | term as (e1, e2):
         typeC(i, c, e2, VStar())
         t = evalC(e2, [])
         typeC(i, c, e1, t)
         return t
-    with Free|term as (x,):
+    with Free | term as (x,):
         return c[x]
-    with App|term as (e1,e2):
+    with App | term as (e1, e2):
         s = typeI(i, c, e1)
-        with VPi|s as (v,f):
+        with VPi | s as (v, f):
             typeC(i, c, e2, v)
             return f(evalC(e2, []))
         raise TypeError(f"Illegal application: {e1}({e2})")
-    with Star|term:
+    with Star | term:
         return VStar()
-    with Pi|term as (p,p1):
+    with Pi | term as (p, p1):
         typeC(i, c, p, VStar())
         t = evalC(p, [])
         typeC(
             i + 1, dict_merge({Local(i): t}, c), substC(0, Free(Local(i)), p1), VStar()
         )
         return VStar()
-    with Nat|term:
+    with Nat | term:
         return VStar()
-    with Zero|term:
+    with Zero | term:
         return VNat()
-    with Succ|term:
+    with Succ | term:
         return VNat()
-    with NatElim|term as (m,mz,ms,k):
+    with NatElim | term as (m, mz, ms, k):
         typeC(i, c, m, VPi(VNat(), lambda _: VStar()))
         mVal = evalC(m, [])
         typeC(i, c, mz, vapp(mVal, VZero()))
@@ -523,15 +527,15 @@ def typeI(i: int, c: Context, term: TermI) -> Type:
         typeC(i, c, k, VNat())
         kVal = evalC(k, [])
         return vapp(mVal, kVal)
-    with Vec|term as (a,n):
+    with Vec | term as (a, n):
         typeC(i, c, a, VStar())
         typeC(i, c, n, VNat())
         return VStar()
-    with Nil|term as (a,):
+    with Nil | term as (a,):
         typeC(i, c, a, VStar())
         aVal = evalC(a, [])
         return VVec(aVal, VZero())
-    with Cons|term as (a,k,x,xs):
+    with Cons | term as (a, k, x, xs):
         typeC(i, c, a, VStar())
         aVal = evalC(a, [])
         typeC(i, c, k, VNat())
@@ -539,7 +543,7 @@ def typeI(i: int, c: Context, term: TermI) -> Type:
         typeC(i, c, x, aVal)
         typeC(i, c, xs, VVec(aVal, kVal))
         return VVec(aVal, VSucc(kVal))
-    with VecElim|term as (a,m,mn,mc,k,vs):
+    with VecElim | term as (a, m, mn, mc, k, vs):
         typeC(i, c, a, VStar())
         aVal = evalC(a, [])
         typeC(i, c, m, VPi(VNat(), lambda k: VPi(VVec(aVal, k), lambda _: VStar())))
@@ -574,13 +578,13 @@ def typeI(i: int, c: Context, term: TermI) -> Type:
 
 
 def typeC(i: int, c: Context, term: TermC, type_: Type) -> None:
-    with Inf|term as (e,):
+    with Inf | term as (e,):
         v = type_
         vp = typeI(i, c, e)
         if quote0(v) != quote0(vp):
             raise TypeError(f"type mismatch: {quote0(v)} != {quote0(vp)}")
         return
-    with Lam|term as (e,), VPi|type_ as (t,tp):
+    with Lam | term as (e,), VPi | type_ as (t, tp):
         typeC(
             i + 1,
             dict_merge({Local(i): t}, c),
@@ -592,36 +596,36 @@ def typeC(i: int, c: Context, term: TermC, type_: Type) -> None:
 
 
 def substI(i: int, r: TermI, t: TermI) -> TermI:
-    with Ann|t as (e1,e2):
+    with Ann | t as (e1, e2):
         e1, e2 = t
         return Ann(substC(i, r, e1), e2)
-    with Bound|t as (j,):
+    with Bound | t as (j,):
         return r if i == j else Bound(j)
-    with Free|t:
+    with Free | t:
         return t
-    with App|t as (e1,e2):
+    with App | t as (e1, e2):
         return App(substI(i, r, e1), substC(i, r, e2))
-    with Star|t:
+    with Star | t:
         return Star()
-    with Pi|t as (f,v):
+    with Pi | t as (f, v):
         return Pi(substC(i, r, f), substC(i + 1, r, v))
-    with Nat|t:
+    with Nat | t:
         return Nat()
-    with Zero|t:
+    with Zero | t:
         return Zero()
-    with Succ|t as (k,):
+    with Succ | t as (k,):
         return Succ(substC(i, r, k))
-    with NatElim|t as (m,mz,ms,k):
+    with NatElim | t as (m, mz, ms, k):
         return NatElim(
             substC(i, r, m), substC(i, r, mz), substC(i, r, ms), substC(i, r, k)
         )
-    with Vec|t as (a,n):
+    with Vec | t as (a, n):
         return Vec(substC(i, r, a), substC(i, r, n))
-    with Nil|t as (a,):
+    with Nil | t as (a,):
         return Nil(substC(i, r, a))
-    with Cons|t as (a,n,x,xs):
+    with Cons | t as (a, n, x, xs):
         return Cons(substC(i, r, a), substC(i, r, n), substC(i, r, x), substC(i, r, xs))
-    with VecElim|t as (a,m,mn,mc,n,xs):
+    with VecElim | t as (a, m, mn, mc, n, xs):
         return VecElim(
             substC(i, r, a),
             substC(i, r, m),
@@ -634,9 +638,9 @@ def substI(i: int, r: TermI, t: TermI) -> TermI:
 
 
 def substC(i: int, r: TermI, t: TermC) -> TermC:
-    with Inf|t as (e,):
+    with Inf | t as (e,):
         return Inf(substI(i, r, e))
-    with Lam|t as (e,):
+    with Lam | t as (e,):
         return Lam(substC(i + 1, r, e))
     raise TypeError(f"Unknown instance '{type(t)}'")
 
@@ -647,44 +651,42 @@ def quote0(v: Value) -> TermC:
 
 
 def quote(i: int, value: Value) -> TermC:
-    with VLam|value as (f,):
+    with VLam | value as (f,):
         return Lam(quote(i + 1, f(vfree(Quote(i)))))
-    with VNeutral|value as (n,):
+    with VNeutral | value as (n,):
         return Inf(neutralQuote(i, n))
-    with VStar|value:
+    with VStar | value:
         return Inf(Star())
-    with VPi|value as (v,f):
+    with VPi | value as (v, f):
         return Inf(Pi(quote(i, v), quote(i + 1, f(vfree(Quote(i))))))
-    with VNat|value:
+    with VNat | value:
         return Inf(Nat())
-    with VZero|value:
+    with VZero | value:
         return Inf(Zero())
-    with VSucc|value as (k,):
+    with VSucc | value as (k,):
         return Inf(Succ(quote(i, k)))
-    with VNil|value as (a,):
+    with VNil | value as (a,):
         return Inf(Nil(quote(i, a)))
-    with VVec|value as (a,n):
+    with VVec | value as (a, n):
         return Inf(Vec(quote(i, a), quote(i, n)))
-    with VCons|value as (a,n,x,xs):
+    with VCons | value as (a, n, x, xs):
         return Inf(Cons(quote(i, a), quote(i, n), quote(i, x), quote(i, xs)))
     raise TypeError(f"Unknown instance '{type(value)}'")
 
 
 def neutralQuote(i: int, neutral: Neutral) -> TermI:
-    with NFree|neutral as (x,):
+    with NFree | neutral as (x,):
         return boundfree(i, x)
-    with NApp|neutral as (n,v):
+    with NApp | neutral as (n, v):
         return App(neutralQuote(i, n), quote(i, v))
-    with NNatElim|neutral as (a,n,x,xs):
-        return NatElim(
-            quote(i, a), quote(i, n), quote(i, x), Inf(neutralQuote(i, xs))
-        )
+    with NNatElim | neutral as (a, n, x, xs):
+        return NatElim(quote(i, a), quote(i, n), quote(i, x), Inf(neutralQuote(i, xs)))
     raise TypeError(f"Unknown instance '{type(neutral)}'")
 
 
 def boundfree(i: int, x: Name) -> TermI:
     check_argument_types()
-    with Quote|x as (i,):
+    with Quote | x as (i,):
         return Bound(i - i - 1)
     return Free(x)
 
@@ -784,9 +786,9 @@ def int2nat(n: int) -> TermC:
 
 
 def nval2int(v: Value) -> int:
-    with VZero|v:
+    with VZero | v:
         return 0
-    with VSucc|v as (k,):
+    with VSucc | v as (k,):
         return 1 + nval2int(k)
     raise TypeError(f"Unknown instance '{type(v)}'")
 
