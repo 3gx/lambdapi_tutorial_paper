@@ -11,16 +11,35 @@ from __future__ import annotations
 from typing import Any as TAny, Callable as TLam, List as TList, \
                    Dict as TDict, Union as TUnion, Type as TType, \
                    TypeVar as TTypeVar, Generic as TGeneric, Tuple as TTuple, \
-                   cast as _cast
+                   cast as _cast, Iterator as TIter
 import sys
 from mydataclasses import dataclass
-import mydataclasses as dc
+import mydataclasses as _dc
 import typeguard
 import functools
 from functools import reduce as fold
 foldl : TLam[[TAny, TAny, TAny], TAny] = lambda func, acc, xs: functools.reduce(func, xs, acc)
 
-_dc_attrs = {"frozen": True}
+_dc_attrs = {"frozen": True, "repr": False}
+
+class Unpack:
+    def __iter__(self) -> TIter[TAny]:
+        yield from [getattr(self, field.name) for field in _dc.fields(self)]
+    def __repr__(self) -> str:
+        string = f"{self.__class__.__name__}("
+        keys = [field.name for field in _dc.fields(self)]
+        for i, k in enumerate(keys):
+            value = getattr(self,k)
+            if isinstance(value, str):
+                string += f"'{value}'"
+            else:
+                string += f"{value}"
+            if i < len(keys)-1:
+                string += ","
+        string += ")"
+        return string
+
+
 
 check_types = True
 #check_types = False
@@ -49,65 +68,63 @@ TermI = TUnion["Ann", "Star", "Pi", "Bound", "Free", "App", \
                "Nat", "NatElim", "Zero", "Succ", \
                "Vec", "Nil", "Cons", "VecElim"]
 @dataclass(**_dc_attrs)
-class Ann:
+class Ann(Unpack):
     e1 : TermC
     e2 : TermC
 @dataclass(**_dc_attrs)
-class Star:
+class Star(Unpack):
     def __repr__(self) -> str:
         return f"*"
 @dataclass(**_dc_attrs)
-class Pi:
+class Pi(Unpack):
     e1 : TermC
     e2 : TermC
-    def __repr__(self) -> str:
-        return f"(Pi {self.e1} {self.e2})"
 @dataclass(**_dc_attrs)
-class Bound:
+class Bound(Unpack):
     i : int
     def __repr__(self) -> str:
         return f"(Bound {self.i})"
 @dataclass(**_dc_attrs)
-class Free:
+class Free(Unpack):
     x : Name
     def __repr__(self) -> str:
         return f"{self.x}"
 @dataclass(**_dc_attrs)
-class App:
+class App(Unpack):
     e1:  TermI
     e2 : TermC
 @dataclass(**_dc_attrs)
-class Nat:
+class Nat(Unpack):
     def __repr__(self) -> str:
         return "Nat"
 @dataclass(**_dc_attrs)
-class NatElim:
+class NatElim(Unpack):
     e1 : TermC
     e2 : TermC
     e3 : TermC
     e4 : TermC
 @dataclass(**_dc_attrs)
-class Zero:
+class Zero(Unpack):
     def __repr__(self) -> str:
         return "Zero"
 @dataclass(**_dc_attrs)
-class Succ:
+class Succ(Unpack):
     k : TermC
     def __repr__(self) -> str:
         return f"(Succ {self.k})"
 @dataclass(**_dc_attrs)
-class Vec:
+class Vec(Unpack):
     a : TermC
     n : TermC
     def __repr__(self) -> str:
         return f"(Vec {self.a} {self.n})"
 @dataclass(**_dc_attrs)
-class Nil:
+class Nil(Unpack):
     a : TermC
     def __repr__(self) -> str:
         return f"(Nil {self.a})"
 @dataclass(**_dc_attrs)
-class Cons:
+class Cons(Unpack):
     a : TermC
     n : TermC
     x : TermC
@@ -115,7 +132,7 @@ class Cons:
     def __repr__(self) -> str:
         return f"(Cons {self.a} {self.n} {self.x} {self.xs})"
 @dataclass(**_dc_attrs)
-class VecElim:
+class VecElim(Unpack):
     a : TermC
     m : TermC
     mn : TermC
@@ -125,66 +142,66 @@ class VecElim:
 
 TermC = TUnion["Inf", "Lam"]
 @dataclass(**_dc_attrs)
-class Inf:
+class Inf(Unpack):
     e : TermI
     def __repr__(self) -> str:
         return f"{self.e}"
 @dataclass(**_dc_attrs)
-class Lam:
+class Lam(Unpack):
     e : TermC
 
 
 Name = TUnion["Global", "Local", "Quote"]
 @dataclass(**_dc_attrs)
-class Global:
+class Global(Unpack):
     str_ : str
     def __repr__(self) -> str:
         return f"'{self.str_}'"
 @dataclass(**_dc_attrs)
-class Local:
+class Local(Unpack):
     i : int
 @dataclass(**_dc_attrs)
-class Quote:
+class Quote(Unpack):
     i : int
 
 _VFunT0 = TLam[["Value"], "Value"]
 _VFunT = TUnion[Box[_VFunT0], _VFunT0]
 @dataclass(**_dc_attrs)
-class VLam:
+class VLam(Unpack):
     f : _VFunT
     def __repr__(self) -> str:
         return f"{quote0(self)}"
 @dataclass(**_dc_attrs)
-class VNeutral:
+class VNeutral(Unpack):
     n : Neutral
 @dataclass(**_dc_attrs)
-class VStar:
+class VStar(Unpack):
     def __repr__(self) -> str:
         return f"*"
 @dataclass(**_dc_attrs)
-class VPi:
+class VPi(Unpack):
     v : Value
     f : _VFunT
     def __repr__(self) -> str:
         return f"{quote0(self)}"
 @dataclass(**_dc_attrs)
-class VNat:
+class VNat(Unpack):
     pass
 @dataclass(**_dc_attrs)
-class VZero:
+class VZero(Unpack):
     pass
 @dataclass(**_dc_attrs)
-class VSucc:
+class VSucc(Unpack):
     k : Value
     def __repr__(self) -> str:
         return f"{quote0(self)}"
 @dataclass(**_dc_attrs)
-class VNil:
+class VNil(Unpack):
     a : Value
     def __repr__(self) -> str:
         return f"{quote0(self)}"
 @dataclass(**_dc_attrs)
-class VCons:
+class VCons(Unpack):
     a : Value
     n : Value
     x : Value
@@ -192,7 +209,7 @@ class VCons:
     def __repr__(self) -> str:
         return f"{quote0(self)}"
 @dataclass(**_dc_attrs)
-class VVec:
+class VVec(Unpack):
     a : Value
     n : Value
     def __repr__(self) -> str:
@@ -205,20 +222,20 @@ Value = TUnion[VLam, VNeutral, VStar, VPi, \
 
 Neutral = TUnion["NFree", "NApp", "NNatElim", "NVecElim"]
 @dataclass(**_dc_attrs)
-class NFree:
+class NFree(Unpack):
     x : Name
 @dataclass(**_dc_attrs)
-class NApp:
+class NApp(Unpack):
     n : Neutral
     v : Value
 @dataclass(**_dc_attrs)
-class NNatElim:
+class NNatElim(Unpack):
     a  : Value
     n  : Value
     x  : Value
     xs : Neutral
 @dataclass(**_dc_attrs)
-class NVecElim:
+class NVecElim(Unpack):
     v1 : Value
     v2 : Value
     v3 : Value
@@ -231,38 +248,35 @@ vfree : TLam[[Name],Value] = lambda n :  VNeutral(NFree(n))
 Env = TList[Value]
 Context = TDict[Name, Type]
 
-def _unpack(obj : TAny) -> TTuple[TAny, ...]:
-    return tuple(getattr(obj, field.name) for field in dc.fields(obj))
-
 def evalI(term : TermI, env : Env) -> Value:
     check_argument_types()
     if isinstance(term, Ann):
-        e, _ = _unpack(term)
+        e, _ = term
         return evalC(e, env)
     elif isinstance(term, Free):
-        x, = _unpack(term)
+        x, = term
         return vfree(x)
     elif isinstance(term, Bound):
         i : int
-        i, = _unpack(term)
+        i, = term
         return env[i]
     elif isinstance(term, App):
-        e, e1 = _unpack(term)
+        e, e1 = term
         return vapp(evalI(e, env), evalC(e1, env))
     elif isinstance(term, Star):
         return VStar()
     elif isinstance(term, Pi):
-        t,t1 = _unpack(term)
+        t,t1 = term
         return VPi(evalC(t,env), lambda x: evalC(t1, [x] + env))
     elif isinstance(term, Nat):
         return VNat()
     elif isinstance(term, Zero):
         return VZero()
     elif isinstance(term, Succ):
-        k, = _unpack(term)
+        k, = term
         return VSucc(evalC(k, env))
     elif isinstance(term, NatElim):
-        m, mz, ms, k = _unpack(term)
+        m, mz, ms, k = term
         mzVal = evalC(mz, env)
         msVal = evalC(ms, env)
         def rec1(kVal : Value) -> Value:
@@ -276,17 +290,17 @@ def evalI(term : TermI, env : Env) -> Value:
             raise TypeError(f"Unknown instance '{type(kVal)}'")
         return rec1(evalC(k, env))
     elif isinstance(term, Vec):
-        a, n = _unpack(term)
+        a, n = term
         return VVec(evalC(a, env), evalC(n, env))
     elif isinstance(term, Nil):
-        a, = _unpack(term)
+        a, = term
         return VNil(evalC(a, env))
     elif isinstance(term, Cons):
-        a, n, x, xs = _unpack(term)
+        a, n, x, xs = term
         return VCons(evalC(a, env), evalC(n, env),
                      evalC(x, env), evalC(xs, env))
     elif isinstance(term, VecElim):
-        a, m, mn, mc, n, xs = _unpack(term)
+        a, m, mn, mc, n, xs = term
         mnVal = evalC(mn, env)
         mcVal = evalC(mc, env)
         def rec2(nVal : Value, xsVal : Value) -> Value:
@@ -306,19 +320,20 @@ def evalI(term : TermI, env : Env) -> Value:
 def vapp(value : Value, v : Value) -> Value:
     check_argument_types()
     if isinstance(value, VLam):
-        f, = _unpack(value)
+        f, = value
         return f(v)
     elif isinstance(value, VNeutral):
-        n, =  _unpack(value)
+        n, =  value
         return VNeutral(NApp(n, v))
     raise TypeError(f"Unknown instance '{type(v)}'")
 
 def evalC(term : TermC, env : Env) -> Value:
     check_argument_types()
     if isinstance(term, Inf):
-        return evalI(term.e, env)
+        e, = term
+        return evalI(e, env)
     elif isinstance(term, Lam):
-        lam_expr = term.e
+        lam_expr, = term
         return VLam(lambda x : evalC(lam_expr, [x] + env))
     raise TypeError(f"Unknown instance '{type(term)}'")
 
@@ -336,22 +351,24 @@ def dict_merge(a : TDict[TAny, TAny],
 def typeI(i : int, c : Context, term : TermI) -> Type:
     check_argument_types()
     if isinstance(term, Ann):
-        typeC(i, c, term.e2, VStar())
-        t = evalC(term.e2, [])
-        typeC(i, c, term.e1, t)
+        e1, e2 = term
+        typeC(i, c, e2, VStar())
+        t = evalC(e2, [])
+        typeC(i, c, e1, t)
         return t
     elif isinstance(term, Free):
-        return c[term.x]
+        x, = term
+        return c[x]
     elif isinstance(term, App):
-        s = typeI(i, c, term.e1)
+        e1, e2 = term
+        s = typeI(i, c, e1)
         if isinstance(s, VPi):
-            typeC(i, c, term.e2, s.v)
-            return s.f(evalC(term.e2, []))
+            typeC(i, c, e2, s.v)
+            return s.f(evalC(e2, []))
     elif isinstance(term, Star):
         return VStar()
     elif isinstance(term, Pi):
-        p = term.e1
-        p1 = term.e2
+        p, p1 = term
         typeC(i,c,p,VStar())
         t = evalC(p, [])
         typeC(i+1,dict_merge({Local(i): t}, c),
@@ -365,7 +382,7 @@ def typeI(i : int, c : Context, term : TermI) -> Type:
     elif isinstance(term, Succ):
         return VNat()
     elif isinstance(term, NatElim):
-        m, mz, ms, k = (term.e1, term.e2, term.e3, term.e4)
+        m, mz, ms, k = term
         typeC(i,c,m,VPi(VNat(), lambda _ : VStar()))
         mVal = evalC(m, [])
         typeC(i,c,mz, vapp(mVal, VZero()))
@@ -377,24 +394,26 @@ def typeI(i : int, c : Context, term : TermI) -> Type:
         kVal = evalC(k, [])
         return vapp(mVal, kVal)
     elif isinstance(term, Vec):
-        typeC(i,c,term.a, VStar())
-        typeC(i,c,term.n, VNat())
+        a, n = term
+        typeC(i,c,a, VStar())
+        typeC(i,c,n, VNat())
         return VStar()
     elif isinstance(term, Nil):
-        typeC(i,c,term.a, VStar())
-        aVal = evalC(term.a, [])
+        a, = term
+        typeC(i,c,a, VStar())
+        aVal = evalC(a, [])
         return VVec(aVal, VZero())
     elif isinstance(term, Cons):
-        a, k, x, xs = _unpack(term)
+        a, k, x, xs = term
         typeC(i,c, a, VStar())
-        aVal = evalC(term.a, [])
+        aVal = evalC(a, [])
         typeC(i,c, k, VNat())
-        kVal = evalC(term.n, [])
+        kVal = evalC(k, [])
         typeC(i,c,x, aVal)
         typeC(i,c,xs, VVec(aVal, kVal))
         return VVec(aVal, VSucc(kVal))
     elif isinstance(term, VecElim):
-        a,m,mn,mc,k,vs = _unpack(term)
+        a,m,mn,mc,k,vs = term
         typeC(i,c,a,VStar())
         aVal = evalC(a, [])
         typeC(i,c,m, VPi(VNat(), lambda k : VPi(VVec(aVal,k),
@@ -418,15 +437,15 @@ def typeI(i : int, c : Context, term : TermI) -> Type:
 def typeC(i : int, c: Context, term : TermC, type_ : Type) -> None:
     check_argument_types()
     if isinstance(term, Inf):
-        e, = _unpack(term)
+        e, = term
         v = type_
         vp = typeI(i, c, e)
         if quote0(v) != quote0(vp):
             raise TypeError(f"type mismatch: {quote0(v)} != {quote0(vp)}")
         return
     elif isinstance(term, Lam) and isinstance(type_,VPi):
-        e, = _unpack(term)
-        t, tp = _unpack(type_)
+        e, = term
+        t, tp = type_
         typeC(i+1, dict_merge({Local(i): t}, c),
                    substC(0, Free(Local(i)), e), tp(vfree(Local(i))))
         return
