@@ -81,9 +81,6 @@ class Unpack:
         string += ")"
         return string
 
-    def classof(self, cls: TAny) -> bool:
-        return isinstance(self, cls)
-
     def match(self, cls: TAny) -> TAny:
         return _match_context(self, cls)
 
@@ -433,14 +430,11 @@ def evalI(term: TermI, env: Env) -> Value:
         return rec1(evalC(k, env))
     with term.match(Vec) as (a, n):
         return VVec(evalC(a, env), evalC(n, env))
-    if isinstance(term, Nil):
-        (a,) = term
+    with term.match(Nil) as (a,):
         return VNil(evalC(a, env))
-    if isinstance(term, Cons):
-        a, n, x, xs = term
+    with term.match(Cons) as (a,n,x,xs):
         return VCons(evalC(a, env), evalC(n, env), evalC(x, env), evalC(xs, env))
-    if isinstance(term, VecElim):
-        a, m, mn, mc, n, xs = term
+    with term.match(VecElim) as (a,m,mn,mc,n,xs):
         mnVal = evalC(mn, env)
         mcVal = evalC(mc, env)
 
