@@ -35,8 +35,8 @@ foldl: TLam[[TAny, TAny, TAny], TAny] = lambda func, acc, xs: functools.reduce(
 _dc_attrs = {"frozen": True, "repr": False}
 
 
-_TT = TTypeVar("_TT")
-class _match_context(TGeneric[_TT]):
+_match_contextT = TTypeVar("_match_contextT")
+class _match_context(TGeneric[_match_contextT]):
     class _skip(Exception):
         pass
 
@@ -44,7 +44,7 @@ class _match_context(TGeneric[_TT]):
         self.skip = not isinstance(obj, cls)
         self.obj = obj
 
-    def __enter__(self) -> _TT:
+    def __enter__(self) -> _match_contextT:
         if self.skip:
             import sys
 
@@ -481,9 +481,8 @@ def dict_merge(a: TDict[TAny, TAny], b: TDict[TAny, TAny]) -> TDict[TAny, TAny]:
 
 
 def typeI(i: int, c: Context, term: TermI) -> Type:
-    check_argument_types()
-    with Ann|term as p:
-        reveal_type(p)
+#    with Ann|term as p:
+#        reveal_type(p)
     with Ann|term as (e1,e2):
         typeC(i, c, e2, VStar())
         t = evalC(e2, [])
@@ -575,17 +574,13 @@ def typeI(i: int, c: Context, term: TermI) -> Type:
 
 
 def typeC(i: int, c: Context, term: TermC, type_: Type) -> None:
-    check_argument_types()
-    if isinstance(term, Inf):
-        (e,) = term
+    with Inf|term as (e,):
         v = type_
         vp = typeI(i, c, e)
         if quote0(v) != quote0(vp):
             raise TypeError(f"type mismatch: {quote0(v)} != {quote0(vp)}")
         return
-    if isinstance(term, Lam) and isinstance(type_, VPi):
-        (e,) = term
-        t, tp = type_
+    with Lam|term as (e,), VPi|type_ as (t,tp):
         typeC(
             i + 1,
             dict_merge({Local(i): t}, c),
@@ -597,46 +592,36 @@ def typeC(i: int, c: Context, term: TermC, type_: Type) -> None:
 
 
 def substI(i: int, r: TermI, t: TermI) -> TermI:
-    check_argument_types()
-    if isinstance(t, Ann):
+    with Ann|t as (e1,e2):
         e1, e2 = t
         return Ann(substC(i, r, e1), e2)
-    if isinstance(t, Bound):
-        (j,) = t
+    with Bound|t as (j,):
         return r if i == j else Bound(j)
-    if isinstance(t, Free):
+    with Free|t:
         return t
-    if isinstance(t, App):
-        e1, e2 = t
+    with App|t as (e1,e2):
         return App(substI(i, r, e1), substC(i, r, e2))
-    if isinstance(t, Star):
+    with Star|t:
         return Star()
-    if isinstance(t, Pi):
-        f, v = t
+    with Pi|t as (f,v):
         return Pi(substC(i, r, f), substC(i + 1, r, v))
-    if isinstance(t, Nat):
+    with Nat|t:
         return Nat()
-    if isinstance(t, Zero):
+    with Zero|t:
         return Zero()
-    if isinstance(t, Succ):
-        (k,) = t
+    with Succ|t as (k,):
         return Succ(substC(i, r, k))
-    if isinstance(t, NatElim):
-        m, mz, ms, k = t
+    with NatElim|t as (m,mz,ms,k):
         return NatElim(
             substC(i, r, m), substC(i, r, mz), substC(i, r, ms), substC(i, r, k)
         )
-    if isinstance(t, Vec):
-        a, n = t
+    with Vec|t as (a,n):
         return Vec(substC(i, r, a), substC(i, r, n))
-    if isinstance(t, Nil):
-        (a,) = t
+    with Nil|t as (a,):
         return Nil(substC(i, r, a))
-    if isinstance(t, Cons):
-        a, n, x, xs = t
+    with Cons|t as (a,n,x,xs):
         return Cons(substC(i, r, a), substC(i, r, n), substC(i, r, x), substC(i, r, xs))
-    if isinstance(t, VecElim):
-        a, m, mn, mc, n, xs = t
+    with VecElim|t as (a,m,mn,mc,n,xs):
         return VecElim(
             substC(i, r, a),
             substC(i, r, m),
@@ -649,12 +634,9 @@ def substI(i: int, r: TermI, t: TermI) -> TermI:
 
 
 def substC(i: int, r: TermI, t: TermC) -> TermC:
-    check_argument_types()
-    if isinstance(t, Inf):
-        (e,) = t
+    with Inf|t as (e,):
         return Inf(substI(i, r, e))
-    if isinstance(t, Lam):
-        (e,) = t
+    with Lam|t as (e,):
         return Lam(substC(i + 1, r, e))
     raise TypeError(f"Unknown instance '{type(t)}'")
 
@@ -665,7 +647,6 @@ def quote0(v: Value) -> TermC:
 
 
 def quote(i: int, v: Value) -> TermC:
-    check_argument_types()
     if isinstance(v, VLam):
         return Lam(quote(i + 1, v.f(vfree(Quote(i)))))
     if isinstance(v, VNeutral):
