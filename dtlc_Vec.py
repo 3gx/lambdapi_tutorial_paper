@@ -110,7 +110,7 @@ class ADT:
 
 
 check_types = True
-# check_types = False
+check_types = False
 check_argument_types: TLam[[], bool]
 if check_types:
     check_argument_types = typeguard.check_argument_types
