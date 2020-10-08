@@ -36,7 +36,7 @@ _dc_attrs = {"frozen": True, "repr": False}
 
 
 class ADT:
-    class _Skip(Exception):
+    class _MatchFail(Exception):
         pass
 
     _T = TTypeVar("_T")
@@ -67,13 +67,13 @@ class ADT:
 
     def __rshift__(self: _T, cls: TType[_U]) -> _U:
         if not isinstance(self, cls):
-            raise ADT._Skip
+            raise ADT._MatchFail
         return self
 
 
 import contextlib as ctxlib
 
-_pm = ctxlib.suppress(ADT._Skip)
+_pm = ctxlib.suppress(ADT._MatchFail)
 
 
 check_types = True
@@ -786,18 +786,18 @@ Plus = App(
     Lam(Lam(Lam(Inf(Succ(Inf(App(Bound(1), Inf(Bound(0))))))))),
 )
 VnatElim = evalI(natElim, [])
-vplus = vapply(VNeutral(NFree(Global("VnatElim"))), [\
+vplus = vapply(VnatElim, [\
         VLam(lambda _: VPi(VNat(), lambda _ : VNat())),
         VLam(lambda n : n),
         VLam(lambda p: VLam(lambda rec: VLam(lambda n : VSucc(vapp(rec, n)))))])
 print("vplus=", vplus)
-Plus2 : TermI
-plus2env : Context
-plus2env = {Global("VnatElim"): natElimTy}
-Plus2, _ = (quote0(vplus) >> Inf).e >> App
-print("plus2env=", plus2env)
-print("Plus2=",Plus2)
-print("type(Plus2)=", typeI0(plus2env, Plus2))
+#Plus2 : TermI
+#plus2env : Context
+#plus2env = {Global("VnatElim"): natElimTy}
+#Plus2, _ = (quote0(vplus) >> Inf).e >> App
+#print("plus2env=", plus2env)
+#print("Plus2=",Plus2)
+#print("type(Plus2)=", typeI0(plus2env, Plus2))
 
 Plus1 = Ann(
     Lam(
@@ -831,9 +831,9 @@ def nval2int(v: Value) -> int:
 
 
 
-e1 = evalI(App(App(Plus2, int2nat(2)), int2nat(2)), [])
-print("e1= ", e1)
-print("2+2 ->", nval2int(evalI(App(App(Plus, int2nat(2)), int2nat(2)), [])))
+#e1 = evalI(App(App(Plus2, int2nat(2)), int2nat(2)), [])
+#print("e1= ", e1)
+#print("2+2 ->", nval2int(evalI(App(App(Plus, int2nat(2)), int2nat(2)), [])))
 # sys.exit(0)
 
 ## > plus 40 2
