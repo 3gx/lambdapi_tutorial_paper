@@ -664,8 +664,8 @@ def neutralQuote(i: int, neutral: Neutral) -> TermI:
 
 def boundfree(i: int, x: Name) -> TermI:
     check_argument_types()
-    with _pm, x >> Quote as (i,):
-        return Bound(i - i - 1)
+    with _pm, x >> Quote as (k,):
+        return Bound(i - k - 1)
     return Free(x)
 
 
@@ -740,7 +740,28 @@ plusl: TLam[[TermC], TermI] = lambda x: NatElim(
     x,
 )
 
-Plus = Ann(
+natElimL = Lam(Lam(Lam(Lam(\
+                Inf(NatElim(Inf(Bound(3)),Inf(Bound(2)), \
+                            Inf(Bound(1)),Inf(Bound(0))) \
+                   )
+                ))))
+natElimTy = VPi(
+        VPi(VNat(), lambda _ : VStar()), lambda m: \
+                VPi (vapp(m, VZero()), lambda _ : \
+                    VPi(VPi(VNat(), lambda k: \
+                            VPi(vapp(m,k), lambda _ : \
+                                vapp(m,VSucc(k)))),
+                        lambda _ : VPi(VNat(), lambda n : vapp(m,n)))))
+
+natElim = Ann(natElimL, quote0(natElimTy))
+print(natElim)
+Plus = App(App(App(
+            natElim,
+                Lam(pi(Inf(Nat()), Inf(Nat())))),
+                Lam(Inf(Bound(0)))),
+                Lam(Lam(Lam(Inf(Succ(Inf(App(Bound(1), Inf(Bound(0))))))))))
+
+Plus1 = Ann(
     Lam(
         Inf(
             NatElim(
