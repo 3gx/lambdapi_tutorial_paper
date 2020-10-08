@@ -756,12 +756,14 @@ natElimTy = VPi(
                         lambda _ : VPi(VNat(), lambda n : vapp(m,n)))))
 
 natElim = Ann(natElimL, quote0(natElimTy))
-print(natElim)
+print("natElim=", natElim)
+print("type(natElim)=", typeI0({}, natElim))
 Plus = App(App(App(
             natElim,
                 Lam(pi(Inf(Nat()), Inf(Nat())))),
                 Lam(Inf(Bound(0)))),
                 Lam(Lam(Lam(Inf(Succ(Inf(App(Bound(1), Inf(Bound(0))))))))))
+print("type(Plus)=", typeI0({}, Plus))
 
 Plus1 = Ann(
     Lam(
@@ -868,7 +870,7 @@ print("eval(n4)=", nval2int(evalI(n4, [])))
 ##                    (\m _ -> Pi (n :: Nat) . Vec a n -> Vec a (plus m n))
 ##                    (\_ v -> v)
 ##                    (\m v vs rec n w -> Cons a (plus m n) v (rec n w)))
-## append :: Pi (a :: *) (m :: Nat) (v :: Vec a m) (n :: Nat) (w :: Vec a n) .
+##        :: Pi (a :: *) (m :: Nat) (v :: Vec a m) (n :: Nat) (w :: Vec a n) .
 ##           Vec a (plus m n)
 
 ## > assume (a :: *) (x :: a) (y :: a)
@@ -888,7 +890,6 @@ def bound(i: int) -> TermC:
 def vec(a: TermC, n: TermC) -> TermC:
     return Inf(Vec(a, n))
 
-
 vecElimL = Lam(
                Lam(
                    Lam(
@@ -904,6 +905,11 @@ vecElimL = Lam(
                  Inf(Bound(0)))
          )))))))
 
+def apply(f : Value , args : TList[Value]) -> Value:
+    for arg in args:
+        f = vapp(f, arg)
+    return f
+
 vecElimTy = VPi(VStar(), lambda a : \
         VPi(VPi(VNat(), lambda n: \
         VPi(VVec(a,n), lambda _ : VStar())), lambda m : \
@@ -917,6 +923,64 @@ vecElimTy = VPi(VStar(), lambda a : \
         VPi(VVec(a,n), lambda xs : vapp(vapp(m,n),xs)))))))
 vecElim = Ann(vecElimL, quote0(vecElimTy))
 print("vecElim=", vecElim)
+print("type(vecElim)", typeI0({}, vecElim))
+sys.exit(0);
+AppendE = Lam(Inf(App(App(App(App(vecElim, bound(0)),
+                        Lam(
+                            Lam(
+                                pi(
+                                    Inf(Nat()),
+                                    pi(
+                                        vec(bound(3), bound(0)),
+                                        vec(bound(4), plus(bound(3), bound(1))),
+                                    ),
+                                )
+                            )
+                        )),
+                        Lam(Lam(bound(0)))),
+                        Lam(
+                            Lam(
+                                Lam(
+                                    Lam(
+                                        Lam(
+                                            Lam(
+                                                Inf(
+                                                    Cons(
+                                                        bound(6),
+                                                        plus(bound(5), bound(1)),
+                                                        bound(4),
+                                                        Inf(
+                                                            App(
+                                                                App(Bound(2), bound(1)),
+                                                                bound(0),
+                                                            )
+                                                        ),
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        ))))
+
+
+vplus = evalI(Plus, [])
+vvecelim  = evalI(vecElim, [])
+sys.exit();
+#AppendL = VLam(lambda a : apply(vecElim, a,
+#    VLam(lambda m _ : VPi(VNat(), lambda n : VPi(VVec(a,n), lambda _: Vec(a,
+#        apply(vplus,m,n)))))
+AppendTy = VPi(VStar(), lambda a: \
+            VPi(VNat(), lambda m : \
+            VPi(VVec(a,m), lambda v : \
+            VPi(VNat(), lambda n :\
+            VPi(VVec(a,n), lambda w : VVec(a, vapp(vapp(vplus, m),n)))))))
+print("AppenTy=", quote0(AppendTy))
+append = Ann(AppendE, quote0(AppendTy))
+print("type(append)= " ,typeI0({}, append))
+sys.exit(0)
+#print("append=", append)
 Append = Ann(
     Lam(
         Lam(
