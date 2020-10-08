@@ -123,6 +123,8 @@ TermI = TUnion[
 class Ann(ADT):
     e1: TermC
     e2: TermC
+    def __repr__(self) -> str:
+        return f"(Ann {self.e1}:{self.e2})"
 
 
 @dataclass(**_dc_attrs)
@@ -887,6 +889,34 @@ def vec(a: TermC, n: TermC) -> TermC:
     return Inf(Vec(a, n))
 
 
+vecElimL = Lam(
+               Lam(
+                   Lam(
+                       Lam(
+                           Lam(
+                               Lam(
+                                   Inf(
+         VecElim(Inf(Bound(5)),
+                 Inf(Bound(4)),
+                 Inf(Bound(3)),
+                 Inf(Bound(2)),
+                 Inf(Bound(1)),
+                 Inf(Bound(0)))
+         )))))))
+
+vecElimTy = VPi(VStar(), lambda a : \
+        VPi(VPi(VNat(), lambda n: \
+        VPi(VVec(a,n), lambda _ : VStar())), lambda m : \
+        VPi(vapp(vapp(m,VZero()), VNil(a)), lambda _: \
+        VPi(VPi(VNat(), lambda n : \
+        VPi(a, lambda x: \
+        VPi(VVec(a,n), lambda xs : \
+        VPi(vapp(vapp(m,n),xs), lambda _ : \
+        vapp(vapp(m,n),VCons(a,n,x,xs)))))), lambda _ : \
+        VPi(VNat(), lambda n : \
+        VPi(VVec(a,n), lambda xs : vapp(vapp(m,n),xs)))))))
+vecElim = Ann(vecElimL, quote0(vecElimTy))
+print("vecElim=", vecElim)
 Append = Ann(
     Lam(
         Lam(
