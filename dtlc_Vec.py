@@ -156,7 +156,7 @@ class Free(ADT):
     x: Name
 
     def __repr__(self) -> str:
-        return f"{self.x}"
+        return f"(Free {self.x})"
 
 
 @dataclass(**_dc_attrs)
@@ -685,6 +685,12 @@ def boundfree(i: int, x: Name) -> TermI:
 # Examples
 ###############################################################################
 
+def vapply(f: Value, args: TList[Value]) -> Value:
+    for arg in args:
+        f = vapp(f, arg)
+    return f
+
+
 e0 = quote0(VLam(lambda x: VLam(lambda y: x)))
 print("e0=", e0)
 
@@ -779,7 +785,19 @@ Plus = App(
     App(App(natElim, Lam(pi(Inf(Nat()), Inf(Nat())))), Lam(Inf(Bound(0)))),
     Lam(Lam(Lam(Inf(Succ(Inf(App(Bound(1), Inf(Bound(0))))))))),
 )
-print("type(Plus)=", typeI0({}, Plus))
+VnatElim = evalI(natElim, [])
+vplus = vapply(VNeutral(NFree(Global("VnatElim"))), [\
+        VLam(lambda _: VPi(VNat(), lambda _ : VNat())),
+        VLam(lambda n : n),
+        VLam(lambda p: VLam(lambda rec: VLam(lambda n : VSucc(vapp(rec, n)))))])
+print("vplus=", vplus)
+Plus2 : TermI
+plus2env : Context
+plus2env = {Global("VnatElim"): natElimTy}
+Plus2, _ = (quote0(vplus) >> Inf).e >> App
+print("plus2env=", plus2env)
+print("Plus2=",Plus2)
+print("type(Plus2)=", typeI0(plus2env, Plus2))
 
 Plus1 = Ann(
     Lam(
@@ -812,6 +830,9 @@ def nval2int(v: Value) -> int:
     raise TypeError(f"Unknown instance '{type(v)}'")
 
 
+
+e1 = evalI(App(App(Plus2, int2nat(2)), int2nat(2)), [])
+print("e1= ", e1)
 print("2+2 ->", nval2int(evalI(App(App(Plus, int2nat(2)), int2nat(2)), [])))
 # sys.exit(0)
 
@@ -932,11 +953,6 @@ vecElimL = Lam(
     )
 )
 
-
-def vapply(f: Value, args: TList[Value]) -> Value:
-    for arg in args:
-        f = vapp(f, arg)
-    return f
 
 
 vecElimTy = VPi(
