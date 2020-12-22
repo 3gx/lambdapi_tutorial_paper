@@ -6,7 +6,7 @@ pub fn test() -> i32 {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-struct TermI(Rc<TermIKind>);
+pub struct TermI(Rc<TermIKind>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum TermIKind {
@@ -23,7 +23,7 @@ impl TermI {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-struct TermC(Rc<TermCKind>);
+pub struct TermC(Rc<TermCKind>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum TermCKind {
@@ -37,7 +37,7 @@ impl TermC {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-struct Name(Rc<NameKind>);
+pub struct Name(Rc<NameKind>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum NameKind {
@@ -53,7 +53,7 @@ impl Name {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-struct Type(Rc<TypeKind>);
+pub struct Type(Rc<TypeKind>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum TypeKind {
@@ -68,7 +68,7 @@ impl Type {
 }
 
 #[derive(Clone)]
-struct Value(Rc<ValueKind>);
+pub struct Value(Rc<ValueKind>);
 
 #[derive(Clone)]
 enum ValueKind {
@@ -135,7 +135,8 @@ fn vfree(n: &Name) -> Value {
 use std::collections::VecDeque;
 type Env = VecDeque<Value>;
 
-fn evalI(term: &TermI, env: &Env) -> Value {
+#[allow(non_snake_case)]
+pub fn evalI(term: &TermI, env: &Env) -> Value {
     match term.kind() {
         TermIKind::Ann(e, _) => evalC(e, env),
         TermIKind::Free(x) => vfree(x),
@@ -148,11 +149,23 @@ fn evalI(term: &TermI, env: &Env) -> Value {
     }
 }
 
-fn evalC(term: &TermC, env: &Env) -> Value {
-    unimplemented!()
+#[allow(non_snake_case)]
+pub fn evalC(term: &TermC, env: &Env) -> Value {
+    match term.kind() {
+        TermCKind::Inf(i) => evalI(i, env),
+        TermCKind::Lam(e) => {
+            let env = env.clone();
+            let e = e.clone();
+            Value::Lam(Rc::new(move |x| {
+                let mut env = env.clone();
+                env.push_front(x.clone());
+                evalC(&e, &env)
+            }))
+        }
+    }
 }
 
-fn vapp(v1: &Value, v: &Value) -> Value {
+pub fn vapp(v1: &Value, v: &Value) -> Value {
     match v1.kind() {
         ValueKind::Lam(f) => f(v),
         ValueKind::Neutral(n) => Value::Neutral(Neutral::App(n.clone(), v.clone())),
