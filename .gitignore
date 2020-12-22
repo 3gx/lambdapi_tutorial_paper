@@ -22,5 +22,6 @@ cabal.sandbox.config
 .stack-work/
 cabal.project.local
 cabal.project.local~
+session-bak.vim
 .HTF/
 .ghc.environment.*
