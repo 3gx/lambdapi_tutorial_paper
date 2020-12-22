@@ -6,7 +6,7 @@ pub fn test() -> i32 {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-struct TermI(Box<TermIKind>);
+struct TermI(Rc<TermIKind>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum TermIKind {
@@ -18,7 +18,7 @@ enum TermIKind {
 
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-struct TermC(Box<TermCKind>);
+struct TermC(Rc<TermCKind>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum TermCKind {
@@ -27,7 +27,7 @@ enum TermCKind {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-struct Name(Box<NameKind>);
+struct Name(Rc<NameKind>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum NameKind {
@@ -37,30 +37,58 @@ enum NameKind {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-struct Type(Box<TypeKind>);
+struct Type(Rc<TypeKind>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum TypeKind {
-    TFree(Name),
+    Free(Name),
     Fun(Type, Type),
 }
 
-
 #[derive(Clone)]
-struct Value(Box<ValueKind>);
+struct Value(Rc<ValueKind>);
 
 #[derive(Clone)]
 enum ValueKind {
-    VLam(Rc<dyn Fn(Value) -> Value>),
-    Fun(Type, Type),
+    Lam(Rc<dyn Fn(Value) -> Value>),
+    Neutral(Neutral),
 }
 
+impl Value {
+    fn new(kind: ValueKind) -> Value {
+        Value(Rc::new(kind))
+    }
+    fn Lam(v : Rc<dyn Fn(Value) -> Value>) -> Value {
+        Value::new(ValueKind::Lam(v))
+    }
+    fn Neutral(n: Neutral) -> Value {
+        Value::new(ValueKind::Neutral(n))
+    }
+}
 
 #[derive(Clone)]
-struct Neutral(Box<NeutralKind>);
+struct Neutral(Rc<NeutralKind>);
 
 #[derive(Clone)]
 enum NeutralKind {
     Free(Name),
     App(Neutral, Value),
+}
+
+impl Neutral {
+    fn new(kind: NeutralKind) -> Neutral {
+        Neutral(Rc::new(kind))
+    }
+
+    fn Free(n: Name) -> Neutral {
+        Neutral::new(NeutralKind::Free(n))
+    }
+
+    fn App(n: Neutral, v: Value) -> Neutral {
+        Neutral::new(NeutralKind::App(n,v))
+    }
+}
+
+fn free(n: &Name) -> Value {
+    Value::Neutral(Neutral::Free(n.clone()))
 }
