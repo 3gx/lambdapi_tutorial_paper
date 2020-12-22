@@ -16,6 +16,11 @@ enum TermIKind {
     App(TermI, TermC),
 }
 
+impl TermI {
+    fn kind(&self) -> &TermIKind {
+        return &*self.0;
+    }
+}
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 struct TermC(Rc<TermCKind>);
@@ -23,7 +28,12 @@ struct TermC(Rc<TermCKind>);
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum TermCKind {
     Inf(TermI),
-    Lam(TermC)
+    Lam(TermC),
+}
+impl TermC {
+    fn kind(&self) -> &TermCKind {
+        return &*self.0;
+    }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -36,6 +46,12 @@ enum NameKind {
     Quote(Int),
 }
 
+impl Name {
+    fn kind(&self) -> &NameKind {
+        return &*self.0;
+    }
+}
+
 #[derive(Clone, Eq, PartialEq, Debug)]
 struct Type(Rc<TypeKind>);
 
@@ -45,24 +61,40 @@ enum TypeKind {
     Fun(Type, Type),
 }
 
+impl Type {
+    fn kind(&self) -> &TypeKind {
+        return &*self.0;
+    }
+}
+
 #[derive(Clone)]
 struct Value(Rc<ValueKind>);
 
 #[derive(Clone)]
 enum ValueKind {
-    Lam(Rc<dyn Fn(Value) -> Value>),
+    Lam(Rc<dyn Fn(&Value) -> Value>),
     Neutral(Neutral),
 }
 
 impl Value {
+    fn kind(&self) -> &ValueKind {
+        return &*self.0;
+    }
+}
+
+impl Value {
+    #![allow(non_snake_case)]
     fn new(kind: ValueKind) -> Value {
         Value(Rc::new(kind))
     }
-    fn Lam(v : Rc<dyn Fn(Value) -> Value>) -> Value {
+    fn Lam(v: Rc<dyn Fn(&Value) -> Value>) -> Value {
         Value::new(ValueKind::Lam(v))
     }
     fn Neutral(n: Neutral) -> Value {
         Value::new(ValueKind::Neutral(n))
+    }
+    fn clone(&self) -> Value {
+        Value(Rc::clone(&self.0))
     }
 }
 
@@ -76,6 +108,7 @@ enum NeutralKind {
 }
 
 impl Neutral {
+    #![allow(non_snake_case)]
     fn new(kind: NeutralKind) -> Neutral {
         Neutral(Rc::new(kind))
     }
@@ -85,10 +118,43 @@ impl Neutral {
     }
 
     fn App(n: Neutral, v: Value) -> Neutral {
-        Neutral::new(NeutralKind::App(n,v))
+        Neutral::new(NeutralKind::App(n, v))
     }
 }
 
-fn free(n: &Name) -> Value {
+impl Neutral {
+    fn kind(&self) -> &NeutralKind {
+        return &*self.0;
+    }
+}
+
+fn vfree(n: &Name) -> Value {
     Value::Neutral(Neutral::Free(n.clone()))
+}
+
+use std::collections::VecDeque;
+type Env = VecDeque<Value>;
+
+fn evalI(term: &TermI, env: &Env) -> Value {
+    match term.kind() {
+        TermIKind::Ann(e, _) => evalC(e, env),
+        TermIKind::Free(x) => vfree(x),
+        TermIKind::Bound(i) => env[*i as usize].clone(),
+        TermIKind::App(e, ep) => {
+            let v1 = &evalI(e, env);
+            let v2 = &evalC(ep, env);
+            vapp(v1, v2)
+        }
+    }
+}
+
+fn evalC(term: &TermC, env: &Env) -> Value {
+    unimplemented!()
+}
+
+fn vapp(v1: &Value, v: &Value) -> Value {
+    match v1.kind() {
+        ValueKind::Lam(f) => f(v),
+        ValueKind::Neutral(n) => Value::Neutral(Neutral::App(n.clone(), v.clone())),
+    }
 }
