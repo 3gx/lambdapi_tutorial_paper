@@ -6,12 +6,24 @@ pub fn test() -> i32 {
 }
 
 type BBox<T> = Rc<T>;
+/*
+#[derive(ADT)]
+enum TermI {
+    Ann(TermC, Type),
+    Bound(Int),
+    Free(Name),
+    App(TermI, TermC),
+};
+ */
+
+// ---------------------------------------------------------------------------
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-pub struct TermI(BBox<TermIKind>);
+pub struct TermI(BBox<kTermI>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-enum TermIKind {
+#[allow(non_camel_case_types)]
+enum kTermI {
     Ann(TermC, Type),
     Bound(Int),
     Free(Name),
@@ -19,116 +31,191 @@ enum TermIKind {
 }
 
 impl TermI {
-    fn kind(&self) -> &TermIKind {
+    fn new(kind: kTermI) -> TermI {
+        TermI(BBox::new(kind))
+    }
+    fn kind(&self) -> &kTermI {
         return &*self.0;
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Debug)]
-pub struct TermC(BBox<TermCKind>);
+impl TermI {
+    #![allow(non_snake_case)]
+    fn Ann(trm: TermC, typ: Type) -> TermI {
+        TermI::new(kTermI::Ann(trm, typ))
+    }
+    fn Bound(i: Int) -> TermI {
+        TermI::new(kTermI::Bound(i))
+    }
+    fn Free(n: Name) -> TermI {
+        TermI::new(kTermI::Free(n))
+    }
+    fn App(ti: TermI, tc: TermC) -> TermI {
+        TermI::new(kTermI::App(ti, tc))
+    }
+}
+
+// ---------------------------------------------------------------------------
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-enum TermCKind {
+pub struct TermC(BBox<kTermC>);
+
+#[allow(non_camel_case_types)]
+#[derive(Clone, Eq, PartialEq, Debug)]
+enum kTermC {
     Inf(TermI),
     Lam(TermC),
 }
+
 impl TermC {
-    fn kind(&self) -> &TermCKind {
+    fn new(kind: kTermC) -> TermC {
+        TermC(BBox::new(kind))
+    }
+    fn kind(&self) -> &kTermC {
         return &*self.0;
     }
 }
+impl TermC {
+    #![allow(non_snake_case)]
+    fn Inf(ti: TermI) -> TermC {
+        TermC::new(kTermC::Inf(ti))
+    }
+    fn Lam(tc: TermC) -> TermC {
+        TermC::new(kTermC::Lam(tc))
+    }
+}
+
+// ---------------------------------------------------------------------------
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-pub struct Name(BBox<NameKind>);
+pub struct Name(BBox<kName>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-enum NameKind {
+#[allow(non_camel_case_types)]
+enum kName {
     Global(String),
     Local(Int),
     Quote(Int),
 }
 
 impl Name {
-    fn kind(&self) -> &NameKind {
+    fn new(kind: kName) -> Name {
+        Name(BBox::new(kind))
+    }
+    fn kind(&self) -> &kName {
         return &*self.0;
     }
 }
+impl Name {
+    #![allow(non_snake_case)]
+    fn Global(s: String) -> Name {
+        Name::new(kName::Global(s))
+    }
+    fn Local(i: Int) -> Name {
+        Name::new(kName::Local(i))
+    }
+    fn Quote(i: Int) -> Name {
+        Name::new(kName::Quote(i))
+    }
+}
+
+// ---------------------------------------------------------------------------
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-pub struct Type(BBox<TypeKind>);
+pub struct Type(BBox<kType>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-enum TypeKind {
-    Free(Name),
+#[allow(non_camel_case_types)]
+enum kType {
+    TFree(Name),
     Fun(Type, Type),
 }
 
 impl Type {
-    fn kind(&self) -> &TypeKind {
+    fn new(kind: kType) -> Type {
+        Type(BBox::new(kind))
+    }
+    fn kind(&self) -> &kType {
         return &*self.0;
     }
 }
 
-#[derive(Clone)]
-pub struct Value(BBox<ValueKind>);
+impl Type {
+    fn TFree(n: Name) -> Type {
+        Type::new(kType::TFree(n))
+    }
+    fn Fun(t1: Type, t2: Type) -> Type {
+        Type::new(kType::Fun(t1, t2))
+    }
+}
+
+// ---------------------------------------------------------------------------
 
 #[derive(Clone)]
-enum ValueKind {
+pub struct Value(BBox<kValue>);
+
+#[derive(Clone)]
+#[allow(non_camel_case_types)]
+enum kValue {
     Lam(BBox<dyn Fn(&Value) -> Value>),
     Neutral(Neutral),
 }
 
 impl Value {
-    fn kind(&self) -> &ValueKind {
+    fn new(k: kValue) -> Value {
+        Value(BBox::new(k))
+    }
+    fn kind(&self) -> &kValue {
         return &*self.0;
     }
 }
 
 impl Value {
     #![allow(non_snake_case)]
-    fn new(kind: ValueKind) -> Value {
-        Value(BBox::new(kind))
-    }
     fn Lam(v: BBox<dyn Fn(&Value) -> Value>) -> Value {
-        Value::new(ValueKind::Lam(v))
+        Value::new(kValue::Lam(v))
     }
     fn Neutral(n: Neutral) -> Value {
-        Value::new(ValueKind::Neutral(n))
-    }
-    fn clone(&self) -> Value {
-        Value(BBox::clone(&self.0))
+        Value::new(kValue::Neutral(n))
     }
 }
 
-#[derive(Clone)]
-struct Neutral(BBox<NeutralKind>);
+// ---------------------------------------------------------------------------
 
 #[derive(Clone)]
-enum NeutralKind {
-    Free(Name),
-    App(Neutral, Value),
+struct Neutral(BBox<kNeutral>);
+
+#[derive(Clone)]
+#[allow(non_camel_case_types)]
+enum kNeutral {
+    NFree(Name),
+    NApp(Neutral, Value),
 }
 
 impl Neutral {
-    #![allow(non_snake_case)]
-    fn new(kind: NeutralKind) -> Neutral {
+    fn new(kind: kNeutral) -> Neutral {
         Neutral(BBox::new(kind))
     }
-
-    fn Free(n: Name) -> Neutral {
-        Neutral::new(NeutralKind::Free(n))
-    }
-
-    fn App(n: Neutral, v: Value) -> Neutral {
-        Neutral::new(NeutralKind::App(n, v))
-    }
-    fn kind(&self) -> &NeutralKind {
+    fn kind(&self) -> &kNeutral {
         return &self.0;
     }
 }
+impl Neutral {
+    #![allow(non_snake_case)]
+
+    fn NFree(n: Name) -> Neutral {
+        Neutral::new(kNeutral::NFree(n))
+    }
+
+    fn App(n: Neutral, v: Value) -> Neutral {
+        Neutral::new(kNeutral::NApp(n, v))
+    }
+}
+
+// ---------------------------------------------------------------------------
 
 fn vfree(n: &Name) -> Value {
-    Value::Neutral(Neutral::Free(n.clone()))
+    Value::Neutral(Neutral::NFree(n.clone()))
 }
 
 use std::collections::VecDeque;
@@ -137,10 +224,10 @@ type Env = VecDeque<Value>;
 #[allow(non_snake_case)]
 pub fn evalI(term: &TermI, env: &Env) -> Value {
     match term.kind() {
-        TermIKind::Ann(e, _) => evalC(e, env),
-        TermIKind::Free(x) => vfree(x),
-        TermIKind::Bound(i) => env[*i as usize].clone(),
-        TermIKind::App(e, ep) => {
+        kTermI::Ann(e, _) => evalC(e, env),
+        kTermI::Free(x) => vfree(x),
+        kTermI::Bound(i) => env[*i as usize].clone(),
+        kTermI::App(e, ep) => {
             let v1 = &evalI(e, env);
             let v2 = &evalC(ep, env);
             vapp(v1, v2)
@@ -151,8 +238,8 @@ pub fn evalI(term: &TermI, env: &Env) -> Value {
 #[allow(non_snake_case)]
 pub fn evalC(term: &TermC, env: &Env) -> Value {
     match term.kind() {
-        TermCKind::Inf(i) => evalI(i, env),
-        TermCKind::Lam(e) => {
+        kTermC::Inf(i) => evalI(i, env),
+        kTermC::Lam(e) => {
             let env = env.clone();
             let e = e.clone();
             Value::Lam(BBox::new(move |x| {
@@ -196,8 +283,8 @@ impl Info {
 
 pub fn vapp(v1: &Value, v: &Value) -> Value {
     match v1.kind() {
-        ValueKind::Lam(f) => f(v),
-        ValueKind::Neutral(n) => Value::Neutral(Neutral::App(n.clone(), v.clone())),
+        kValue::Lam(f) => f(v),
+        kValue::Neutral(n) => Value::Neutral(Neutral::App(n.clone(), v.clone())),
     }
 }
 
@@ -215,7 +302,7 @@ fn lookup<'a, 'b>(c: &'a Ctx, n: &'b Name) -> Option<&'a Info> {
 #[allow(non_snake_case)]
 fn kindC(ctx: &Ctx, t: &Type, k: &Kind) -> Result<()> {
     match (t.kind(), k) {
-        (TypeKind::Free(x), Kind::Star) => {
+        (kType::TFree(x), Kind::Star) => {
             if let Some(x) = lookup(ctx, x) {
                 match x.kind() {
                     InfoKind::HasKind(Kind::Star) => Ok(()),
@@ -225,7 +312,7 @@ fn kindC(ctx: &Ctx, t: &Type, k: &Kind) -> Result<()> {
                 Err(format!("unk var identifier {:?}", x))
             }
         }
-        (TypeKind::Fun(k, k1), Kind::Star) => {
+        (kType::Fun(k, k1), Kind::Star) => {
             kindC(ctx, k, &Kind::Star)?;
             kindC(ctx, k1, &Kind::Star)
         }
@@ -240,12 +327,12 @@ fn typeI0(c: &Ctx, term: &TermI) -> Result<Type> {
 #[allow(non_snake_case)]
 fn typeI(i: Int, c: &Ctx, term: &TermI) -> Result<Type> {
     match term.kind() {
-        TermIKind::Ann(e, t) => {
+        kTermI::Ann(e, t) => {
             kindC(c, t, &Kind::Star)?;
             typeC(i, c, e, t)?;
             Ok(t.clone())
         }
-        TermIKind::Free(x) => {
+        kTermI::Free(x) => {
             if let Some(x) = lookup(c, x) {
                 match x.kind() {
                     InfoKind::HasType(t) => Ok(t.clone()),
@@ -255,7 +342,7 @@ fn typeI(i: Int, c: &Ctx, term: &TermI) -> Result<Type> {
                 Err(format!("unk type identifier {:?}", x))
             }
         }
-        TermIKind::App(e, e1) => {
+        kTermI::App(e, e1) => {
             unimplemented!()
         }
         _ => panic!("unhandled case {:?}", term),
@@ -265,4 +352,20 @@ fn typeI(i: Int, c: &Ctx, term: &TermI) -> Result<Type> {
 #[allow(non_snake_case)]
 fn typeC(i: Int, c: &Ctx, term: &TermC, typ: &Type) -> Result<()> {
     unimplemented!()
+    /*
+    match (term.kind(), typ.kind()) {
+        (TermCKind::Inf(e), _) => {
+            let tp = &typeI(i,c,e)?;
+            if typ != tp {
+                return Err(format!("[inf] type mismatch {:?}", (typ,tp)))
+            }
+            Ok(())
+        }
+        (TermCKind::Lam(e), TypeKind::Fun(t,tp)) => {
+            let c = c.clone();
+            c.push((Name::Local(i), Info::HasType(t.clone())));
+            let s = substC(0,
+        }
+    }
+        */
 }
