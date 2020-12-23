@@ -5,8 +5,10 @@ pub fn test() -> i32 {
     42
 }
 
+type BBox<T> = Rc<T>;
+
 #[derive(Clone, Eq, PartialEq, Debug)]
-pub struct TermI(Rc<TermIKind>);
+pub struct TermI(BBox<TermIKind>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum TermIKind {
@@ -23,7 +25,7 @@ impl TermI {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-pub struct TermC(Rc<TermCKind>);
+pub struct TermC(BBox<TermCKind>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum TermCKind {
@@ -37,7 +39,7 @@ impl TermC {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-pub struct Name(Rc<NameKind>);
+pub struct Name(BBox<NameKind>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum NameKind {
@@ -53,7 +55,7 @@ impl Name {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-pub struct Type(Rc<TypeKind>);
+pub struct Type(BBox<TypeKind>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum TypeKind {
@@ -68,11 +70,11 @@ impl Type {
 }
 
 #[derive(Clone)]
-pub struct Value(Rc<ValueKind>);
+pub struct Value(BBox<ValueKind>);
 
 #[derive(Clone)]
 enum ValueKind {
-    Lam(Rc<dyn Fn(&Value) -> Value>),
+    Lam(BBox<dyn Fn(&Value) -> Value>),
     Neutral(Neutral),
 }
 
@@ -85,21 +87,21 @@ impl Value {
 impl Value {
     #![allow(non_snake_case)]
     fn new(kind: ValueKind) -> Value {
-        Value(Rc::new(kind))
+        Value(BBox::new(kind))
     }
-    fn Lam(v: Rc<dyn Fn(&Value) -> Value>) -> Value {
+    fn Lam(v: BBox<dyn Fn(&Value) -> Value>) -> Value {
         Value::new(ValueKind::Lam(v))
     }
     fn Neutral(n: Neutral) -> Value {
         Value::new(ValueKind::Neutral(n))
     }
     fn clone(&self) -> Value {
-        Value(Rc::clone(&self.0))
+        Value(BBox::clone(&self.0))
     }
 }
 
 #[derive(Clone)]
-struct Neutral(Rc<NeutralKind>);
+struct Neutral(BBox<NeutralKind>);
 
 #[derive(Clone)]
 enum NeutralKind {
@@ -110,7 +112,7 @@ enum NeutralKind {
 impl Neutral {
     #![allow(non_snake_case)]
     fn new(kind: NeutralKind) -> Neutral {
-        Neutral(Rc::new(kind))
+        Neutral(BBox::new(kind))
     }
 
     fn Free(n: Name) -> Neutral {
@@ -153,7 +155,7 @@ pub fn evalC(term: &TermC, env: &Env) -> Value {
         TermCKind::Lam(e) => {
             let env = env.clone();
             let e = e.clone();
-            Value::Lam(Rc::new(move |x| {
+            Value::Lam(BBox::new(move |x| {
                 let mut env = env.clone();
                 env.push_front(x.clone());
                 evalC(&e, &env)
@@ -168,7 +170,7 @@ enum Kind {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-struct Info(Rc<InfoKind>);
+struct Info(BBox<InfoKind>);
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum InfoKind {
@@ -177,12 +179,12 @@ enum InfoKind {
 }
 
 impl Info {
-#![allow(non_snake_case)]
+    #![allow(non_snake_case)]
     fn kind(&self) -> &InfoKind {
-       &self.0
+        &self.0
     }
-    fn new(kind : InfoKind) -> Info {
-        return Info(Rc::new(kind))
+    fn new(kind: InfoKind) -> Info {
+        return Info(BBox::new(kind));
     }
     fn HasKind(kind: Kind) -> Info {
         Info::new(InfoKind::HasKind(kind))
@@ -203,7 +205,7 @@ type Ctx = Vec<(Name, Info)>;
 type Result<T> = std::result::Result<T, String>;
 
 fn lookup<'a, 'b>(c: &'a Ctx, n: &'b Name) -> Option<&'a Info> {
-    if let Some((n,i)) = c.iter().find(|x| x.0 == *n) {
+    if let Some((n, i)) = c.iter().find(|x| x.0 == *n) {
         Some(i)
     } else {
         None
@@ -211,17 +213,31 @@ fn lookup<'a, 'b>(c: &'a Ctx, n: &'b Name) -> Option<&'a Info> {
 }
 
 #[allow(non_snake_case)]
-
-#[allow(non_snake_case)]
 fn kindC(ctx: &Ctx, t: &Type, k: &Kind) -> Result<()> {
-    match (t.kind(),k) {
-        (TypeKind::Free(x), Kind::Star) => match lookup(ctx,x) {
-            Some(_) => Ok(()),
-            None => Err(format!("unk var identifier {:?}", x)),
+    match (t.kind(), k) {
+        (TypeKind::Free(x), Kind::Star) => {
+            if let Some(x) = lookup(ctx, x) {
+                match x.kind() {
+                    InfoKind::HasKind(Kind::Star) => Ok(()),
+                    _ => panic!("unhandled case {:?}", x),
+                }
+            } else {
+                Err(format!("unk var identifier {:?}", x))
+            }
         }
-        (TypeKind::Fun(k,k1), Kind::Star) => {
+        (TypeKind::Fun(k, k1), Kind::Star) => {
             kindC(ctx, k, &Kind::Star)?;
             kindC(ctx, k1, &Kind::Star)
         }
     }
+}
+
+#[allow(non_snake_case)]
+fn typeI0(c: &Ctx, term: &TermI) -> Result<Type> {
+    typeI(0, c, term)
+}
+
+#[allow(non_snake_case)]
+fn typeI(i: Int, c: &Ctx, term: &TermI) -> Result<Type> {
+    match term.kind() {}
 }
