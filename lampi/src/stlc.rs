@@ -120,11 +120,8 @@ impl Neutral {
     fn App(n: Neutral, v: Value) -> Neutral {
         Neutral::new(NeutralKind::App(n, v))
     }
-}
-
-impl Neutral {
     fn kind(&self) -> &NeutralKind {
-        return &*self.0;
+        return &self.0;
     }
 }
 
@@ -165,9 +162,66 @@ pub fn evalC(term: &TermC, env: &Env) -> Value {
     }
 }
 
+#[derive(Clone, Eq, PartialEq, Debug)]
+enum Kind {
+    Star,
+}
+
+#[derive(Clone, Eq, PartialEq, Debug)]
+struct Info(Rc<InfoKind>);
+
+#[derive(Clone, Eq, PartialEq, Debug)]
+enum InfoKind {
+    HasKind(Kind),
+    HasType(Type),
+}
+
+impl Info {
+#![allow(non_snake_case)]
+    fn kind(&self) -> &InfoKind {
+       &self.0
+    }
+    fn new(kind : InfoKind) -> Info {
+        return Info(Rc::new(kind))
+    }
+    fn HasKind(kind: Kind) -> Info {
+        Info::new(InfoKind::HasKind(kind))
+    }
+    fn HasType(typ: Type) -> Info {
+        Info::new(InfoKind::HasType(typ))
+    }
+}
+
 pub fn vapp(v1: &Value, v: &Value) -> Value {
     match v1.kind() {
         ValueKind::Lam(f) => f(v),
         ValueKind::Neutral(n) => Value::Neutral(Neutral::App(n.clone(), v.clone())),
+    }
+}
+
+type Ctx = Vec<(Name, Info)>;
+type Result<T> = std::result::Result<T, String>;
+
+fn lookup<'a, 'b>(c: &'a Ctx, n: &'b Name) -> Option<&'a Info> {
+    if let Some((n,i)) = c.iter().find(|x| x.0 == *n) {
+        Some(i)
+    } else {
+        None
+    }
+}
+
+#[allow(non_snake_case)]
+
+#[allow(non_snake_case)]
+fn kindC(ctx: &Ctx, t: &Type, k: &Kind) -> Result<()> {
+    match (t.kind(),k) {
+        (TypeKind::Free(x), Kind::Star) => match lookup(ctx,x) {
+            Some(_) => Ok(()),
+            None => Err(format!("unk var identifier {:?}", x)),
+        }
+        (TypeKind::Fun(k,k1), Kind::Star) => {
+            kindC(ctx, k, &Kind::Star)?;
+            kindC(ctx, k1, &Kind::Star)
+        }
     }
 }
