@@ -4,7 +4,6 @@ fn main() {
 
     use std::cell::RefCell;
     use std::rc::Rc;
-
     struct T(Rc<dyn Fn(i32) -> i32>);
     impl T {
         fn new(f: Rc<dyn Fn(i32) -> i32>) -> T {
@@ -53,4 +52,6 @@ fn main() {
     println!("count= {}", Rc::strong_count(&b.0));
     println!("count= {}", Rc::strong_count(&c.0));
     println!("count= {:?} {:?} {:?}", a, b, c);
+
+    {}
 }

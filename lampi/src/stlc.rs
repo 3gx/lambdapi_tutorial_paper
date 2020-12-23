@@ -365,3 +365,29 @@ fn substC(i: Int, r: &TermI, t: &TermC) -> TermC {
         kTermC::Lam(e) => TermC::Lam(substC(i + 1, r, e)),
     }
 }
+
+fn quote0(v: &Value) -> TermC {
+    quote(0, v)
+}
+
+fn quote(i: Int, v: &Value) -> TermC {
+    match v.kind() {
+        kValue::VLam(f) => TermC::Lam(quote(i + 1, &f(&vfree(Name::Quote(i))))),
+        kValue::VNeutral(n) => TermC::Inf(neutralQuote(i, n)),
+    }
+}
+
+#[allow(non_snake_case)]
+fn neutralQuote(i: Int, n: &Neutral) -> TermI {
+    match n.kind() {
+        kNeutral::NFree(x) => boundfree(i, x),
+        kNeutral::NApp(n, v) => TermI::App(neutralQuote(i, n), quote(i, v)),
+    }
+}
+
+fn boundfree(i: Int, n: &Name) -> TermI {
+    match n.kind() {
+        kName::Quote(k) => TermI::Bound(i - k - 1),
+        _ => TermI::Free(n.clone()),
+    }
+}
