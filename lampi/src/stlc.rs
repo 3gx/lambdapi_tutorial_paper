@@ -239,5 +239,30 @@ fn typeI0(c: &Ctx, term: &TermI) -> Result<Type> {
 
 #[allow(non_snake_case)]
 fn typeI(i: Int, c: &Ctx, term: &TermI) -> Result<Type> {
-    match term.kind() {}
+    match term.kind() {
+        TermIKind::Ann(e, t) => {
+            kindC(c, t, &Kind::Star)?;
+            typeC(i, c, e, t)?;
+            Ok(t.clone())
+        }
+        TermIKind::Free(x) => {
+            if let Some(x) = lookup(c, x) {
+                match x.kind() {
+                    InfoKind::HasType(t) => Ok(t.clone()),
+                    _ => panic!("unhandled case {:?}", x),
+                }
+            } else {
+                Err(format!("unk type identifier {:?}", x))
+            }
+        }
+        TermIKind::App(e, e1) => {
+            unimplemented!()
+        }
+        _ => panic!("unhandled case {:?}", term),
+    }
+}
+
+#[allow(non_snake_case)]
+fn typeC(i: Int, c: &Ctx, term: &TermC, typ: &Type) -> Result<()> {
+    unimplemented!()
 }
