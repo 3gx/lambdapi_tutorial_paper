@@ -1,2 +1,2 @@
-#![feature(box_patterns)]
+#![feature(box_patterns, box_syntax)]
 pub mod stlc;

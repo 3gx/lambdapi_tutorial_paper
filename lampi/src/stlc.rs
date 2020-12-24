@@ -17,7 +17,7 @@ enum TermI {
 
 trait Boxed: Sized + Clone {
     fn b(self: &Self) -> Box<Self> {
-        Box::new(self.clone())
+        box self.clone()
     }
     fn dup(self: &Self) -> Self {
         self.clone()
