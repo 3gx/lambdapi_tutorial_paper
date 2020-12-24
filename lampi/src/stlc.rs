@@ -5,7 +5,8 @@ pub fn test() -> i32 {
     42
 }
 
-type Box<T> = Rc<T>;
+type Box<T> = std::boxed::Box<T>;
+
 /*
 #[derive(ADT)]
 enum TermI {
@@ -16,9 +17,12 @@ enum TermI {
 };
  */
 
-trait Boxed: Sized {
-    fn b(self: Self) -> Box<Self> {
-        Box::new(self)
+trait Boxed: Sized + Clone {
+    fn b(self: &Self) -> Box<Self> {
+        Box::new(self.clone())
+    }
+    fn dup(self: &Self) -> Self {
+        self.clone()
     }
 }
 // ---------------------------------------------------------------------------
@@ -62,7 +66,7 @@ impl Boxed for Type {}
 
 #[derive(Clone)]
 pub enum Value {
-    VLam(Box<dyn Fn(&Value) -> Value>),
+    VLam(Rc<dyn Fn(&Value) -> Value>),
     VNeutral(Box<Neutral>),
 }
 impl Boxed for Value {}
@@ -118,7 +122,7 @@ pub fn evalC(trm: &TermC, env: &Env) -> Value {
         TermC::Lam(e) => {
             let env = env.clone();
             let e = e.clone();
-            Value::VLam(Box::new(move |x| {
+            Value::VLam(Rc::new(move |x| {
                 let mut env = env.clone();
                 env.push_front(x.clone());
                 evalC(&e, &env)
@@ -130,13 +134,7 @@ pub fn evalC(trm: &TermC, env: &Env) -> Value {
 pub fn vapp(v1: &Value, v: &Value) -> Value {
     match v1 {
         Value::VLam(f) => f(v),
-        Value::VNeutral(n) => Value::VNeutral(
-            Neutral::NApp(
-                (*n).clone(), //
-                v.clone().b(),
-            )
-            .b(),
-        ),
+        Value::VNeutral(n) => Value::VNeutral(Neutral::NApp(n.b(), v.b()).b()),
     }
 }
 
@@ -182,12 +180,12 @@ fn typeI(i: Int, c: &Ctx, trm: &TermI) -> Result<Type> {
         TermI::Ann(e, t) => {
             kindC(c, &t, &Kind::Star)?;
             typeC(i, c, &e, &t)?;
-            Ok((**t).clone())
+            Ok(t.dup())
         }
         TermI::Free(x) => {
             if let Some(x) = lookup(c, &x) {
                 match x {
-                    Info::HasType(t) => Ok((**t).clone()),
+                    Info::HasType(t) => Ok(t.dup()),
                     _ => panic!("unhandled case {:?}", x),
                 }
             } else {
@@ -199,7 +197,7 @@ fn typeI(i: Int, c: &Ctx, trm: &TermI) -> Result<Type> {
             match s {
                 Type::Fun(t, tp) => {
                     typeC(i, c, &ep, &t)?;
-                    Ok((*tp).clone())
+                    Ok(tp.dup())
                 }
                 _ => Err(format!(" illegal application {:?}", (e, ep))),
             }
