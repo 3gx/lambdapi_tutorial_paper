@@ -95,7 +95,7 @@ enum Kind {
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 enum Info {
-    HasKind(Kind),
+    HasKind(Box<Kind>),
     HasType(Box<Type>),
 }
 impl Boxed for Info {}
@@ -155,7 +155,7 @@ fn kindC(ctx: &Ctx, t: &Type, k: &Kind) -> Result<()> {
         (Type::TFree(x), Kind::Star) => {
             if let Some(x) = lookup(ctx, x) {
                 match x {
-                    Info::HasKind(Kind::Star) => Ok(()),
+                    Info::HasKind(x) if **x == Kind::Star => Ok(()),
                     _ => panic!("unhandled case {:?}", x),
                 }
             } else {
