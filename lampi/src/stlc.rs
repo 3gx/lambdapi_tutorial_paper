@@ -109,7 +109,7 @@ type Env = VecDeque<Value>;
 pub fn evalI(trm: &TermI, env: &Env) -> Value {
     match trm {
         TermI::Ann(e, _) => evalC(&e, env),
-        TermI::Free(x) => vfree((**x).clone()),
+        TermI::Free(x) => vfree(x.dup()),
         &TermI::Bound(i) => env[i as usize].clone(),
         TermI::App(e, ep) => vapp(&evalI(&e, env), &evalC(&ep, env)),
     }
@@ -124,7 +124,7 @@ pub fn evalC(trm: &TermC, env: &Env) -> Value {
             let e = e.clone();
             Value::VLam(Rc::new(move |x| {
                 let mut env = env.clone();
-                env.push_front(x.clone());
+                env.push_front(x.dup());
                 evalC(&e, &env)
             }))
         }
@@ -218,7 +218,7 @@ fn typeC(i: Int, c: &Ctx, term: &TermC, typ: &Type) -> Result<()> {
         }
         (TermC::Lam(e), Type::Fun(t, tp)) => {
             let mut c = c.clone();
-            c.push_front((Name::Local(i), Info::HasType(t.clone())));
+            c.push_front((Name::Local(i), Info::HasType(t.b())));
             let s = substC(0, &TermI::Free(Name::Local(i).b()), e);
             typeC(i + 1, &c, &s, tp)
         }
@@ -229,15 +229,15 @@ fn typeC(i: Int, c: &Ctx, term: &TermC, typ: &Type) -> Result<()> {
 #[allow(non_snake_case)]
 fn substI(i: Int, r: &TermI, t: &TermI) -> TermI {
     match t {
-        TermI::Ann(e, t) => TermI::Ann(substC(i, r, e).b(), t.clone()),
+        TermI::Ann(e, t) => TermI::Ann(substC(i, r, e).b(), t.b()),
         &TermI::Bound(j) => {
             if i == j {
-                r.clone()
+                r.dup()
             } else {
                 TermI::Bound(j)
             }
         }
-        TermI::Free(y) => TermI::Free(y.clone()),
+        TermI::Free(y) => TermI::Free(y.b()),
         TermI::App(e, ep) => TermI::App(substI(i, r, &e).b(), substC(i, r, &ep).b()),
     }
 }
@@ -272,6 +272,6 @@ fn neutralQuote(i: Int, n: &Neutral) -> TermI {
 fn boundfree(i: Int, n: &Name) -> TermI {
     match n {
         Name::Quote(k) => TermI::Bound(i - k - 1),
-        _ => TermI::Free(n.clone().b()),
+        _ => TermI::Free(n.b()),
     }
 }
