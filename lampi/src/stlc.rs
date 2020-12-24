@@ -110,7 +110,7 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
     match trm {
         TermI::Ann(e, _) => evalC(&e, env),
         TermI::Free(x) => vfree(x.dup()),
-        &TermI::Bound(i) => env[i as usize].clone(),
+        &TermI::Bound(i) => env[i as usize].dup(),
         TermI::App(e, ep) => vapp(&evalI(&e, env), &evalC(&ep, env)),
     }
 }
@@ -121,7 +121,7 @@ pub fn evalC(trm: &TermC, env: &Env) -> Value {
         TermC::Inf(i) => evalI(i, env),
         TermC::Lam(e) => {
             let env = env.clone();
-            let e = e.clone();
+            let e = e.dup();
             Value::VLam(Rc::new(move |x| {
                 let mut env = env.clone();
                 env.push_front(x.dup());
