@@ -5,8 +5,6 @@ pub fn test() -> i32 {
     42
 }
 
-type Box<T> = std::boxed::Box<T>;
-
 /*
 #[derive(ADT)]
 enum TermI {
@@ -155,7 +153,7 @@ fn kindC(ctx: &Ctx, t: &Type, k: &Kind) -> Result<()> {
         (Type::TFree(x), Kind::Star) => {
             if let Some(x) = lookup(ctx, x) {
                 match x {
-                    Info::HasKind(x) if **x == Kind::Star => Ok(()),
+                    Info::HasKind(box Kind::Star) => Ok(()),
                     _ => panic!("unhandled case {:?}", x),
                 }
             } else {
