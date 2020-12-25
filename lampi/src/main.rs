@@ -107,5 +107,25 @@ fn main() {
         println!("");
         println!("-=- DTLC -=-");
         use lampi::dtlc::*;
+        use {vapp, Dup, Name::*, TermC::*, TermI::*, Value::*};
+
+        /*
+        fn vapply(f: &Value, args: &Vec<Value>) -> Value {
+            let mut f = f.dup();
+            for arg in args {
+                f = vapp(&f, arg)
+            }
+            f
+        }
+        */
+        let v0 = VLam(Rc::new(|x| {
+            VLam({
+                let x = x.dup();
+                Rc::new(move |_| x.dup())
+            })
+        }));
+        println!("v0={:?}", v0);
+        let e0 = quote0(&v0);
+        println!("e0={:?}", e0);
     }
 }

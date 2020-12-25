@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 type Int = i32;
 
-trait Dup: Sized + Clone {
+pub trait Dup: Sized + Clone {
     fn b(self: &Self) -> Box<Self> {
         box self.clone()
     }
@@ -242,7 +242,7 @@ fn evalC(trm: &TermC, env: &Env) -> Value {
     }
 }
 
-fn vapp(val: &Value, v: &Value) -> Value {
+pub fn vapp(val: &Value, v: &Value) -> Value {
     use {Neutral::*, Value::*};
     match val {
         VLam(f) => f(v),
@@ -452,7 +452,7 @@ fn typeC(i: Int, ctx: &Context, trm: &TermC, typ: &Type) -> Result<()> {
     }
 }
 
-fn quote0(v: &Value) -> TermC {
+pub fn quote0(v: &Value) -> TermC {
     quote(0, v)
 }
 

@@ -239,7 +239,7 @@ class Inf(ADT):
     e: TermI
 
     def __repr__(self) -> str:
-        return f"{self.e}"
+        return f"Inf({self.e})"
 
 
 @dataclass(**_dc_attrs)
