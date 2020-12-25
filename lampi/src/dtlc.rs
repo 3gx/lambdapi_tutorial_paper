@@ -1,5 +1,22 @@
 use std::rc::Rc;
 
+macro_rules! clone {
+    ($i:ident) => {
+        let $i = $i.clone();
+    };
+    ($i:ident, $($tt:tt)*) => {
+        clone!($i);
+        clone!($($tt)*);
+    };
+    ($this:ident . $i:ident) => {
+        let $i = $this.$i.clone();
+    };
+    ($this:ident . $i:ident, $($tt:tt)*) => {
+        clone!($this . $i);
+        clone!($($tt)*);
+    };
+}
+
 type Int = i32;
 
 pub trait Dup: Sized + Clone {
@@ -372,31 +389,24 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                 i,
                 ctx,
                 mc,
-                &VPi(box VNat, {
-                    let (aVal, mVal) = (aVal.dup(), mVal.dup());
+                &VPi(VNat.b(), {
+                    clone!(aVal, mVal);
                     Rc::new(move |l| {
                         VPi(aVal.b(), {
-                            let (l, aVal, mVal) = (l.dup(), aVal.dup(), mVal.dup());
+                            clone!(l, aVal, mVal);
                             Rc::new(move |y| {
-                                let (l, aVal, mVal) = (l.dup(), aVal.dup(), mVal.dup());
-                                VPi(box VVec(aVal.b(), l.b()), {
-                                    let (l, y, aVal, mVal) =
-                                        (l.dup(), y.dup(), aVal.dup(), mVal.dup());
+                                clone!(l, aVal, mVal);
+                                VPi(VVec(aVal.b(), l.b()).b(), {
+                                    clone!(l, y, aVal, mVal);
                                     Rc::new(move |ys| {
-                                        let (l, y, aVal, mVal) =
-                                            (l.dup(), y.dup(), aVal.dup(), mVal.dup());
+                                        clone!(l, y, aVal, mVal);
                                         VPi(
-                                            box [l.dup(), ys.dup()]
+                                            [l.dup(), ys.dup()]
                                                 .iter()
-                                                .fold(mVal.dup(), |a, b| vapp(&a, &b)),
+                                                .fold(mVal.dup(), |a, b| vapp(&a, &b))
+                                                .b(),
                                             {
-                                                let (l, y, ys, aVal, mVal) = (
-                                                    l.dup(),
-                                                    y.dup(),
-                                                    ys.dup(),
-                                                    aVal.dup(),
-                                                    mVal.dup(),
-                                                );
+                                                clone!(l, y, ys, aVal, mVal);
                                                 Rc::new(move |_| {
                                                     [
                                                         VSucc(l.b()),

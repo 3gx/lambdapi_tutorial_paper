@@ -1,4 +1,22 @@
 #![feature(box_patterns, box_syntax)]
+
+macro_rules! clone_all {
+    ($i:ident) => {
+        let $i = $i.clone();
+    };
+    ($i:ident, $($tt:tt)*) => {
+        clone_all!($i);
+        clone_all!($($tt)*);
+    };
+    ($this:ident . $i:ident) => {
+        let $i = $this.$i.clone();
+    };
+    ($this:ident . $i:ident, $($tt:tt)*) => {
+        clone_all!($this . $i);
+        clone_all!($($tt)*);
+    };
+}
+
 fn main() {
     println!("answer= {}", lampi::stlc::test());
     println!("Hello, world!");
@@ -154,7 +172,8 @@ fn main() {
 
         let big_data = box vec![1, 2, 3, 4];
         closure_user({
-            let big_data = big_data.clone();
+            clone_all!(big_data);
+            //            let big_data = big_data.clone();
             Box::new(move |x| {
                 println!("big_data= {:?}  x={}", big_data, x);
                 false
