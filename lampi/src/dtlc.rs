@@ -20,12 +20,29 @@ impl<'a, T, U> Fix<'a, T, U> {
         (self.f)(self, x)
     }
 }
-
 macro_rules! fix {
     ($e:expr) => {
         Fix { f: &$e }
     };
 }
+
+/*
+struct FixOnce<'a, T, U> {
+    f: &'a dyn FnOnce(&FixOnce<'a, T, U>, T) -> U,
+}
+
+impl<'a, T, U> FixOnce<'a, T, U> {
+    fn call(&self, x: T) -> U {
+        (self.f)(self, x)
+    }
+}
+
+macro_rules! fix_once {
+    ($e:expr) => {
+        FixOnce { f: &$e }
+    };
+}
+*/
 
 // ---------------------------------------------------------------------------
 
@@ -168,27 +185,38 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
                     box k.dup(),
                 )),
                 _ => unreachable!(format!("unknown natElim match {:?}", kVal)),
-            }).call(&evalC(k,env))
-        },
-        Vec(a,n) => VVec(box evalC(a,env), box evalC(n,env)),
-        VecElim(a,m,mn,mc,n,xs) => {
-            let mnVal = evalC(mn,env);
-            let mcVal = evalC(mc,env);
-            fix!(|rec, (nVal, xsVal) : (&Value, &_) | match xsVal {
-                VNil(_) => mnVal.dup(),
-                VCons(_, l, x,xs) => unimplemented!(),
-                VNeutral(n) => VNeutral(
-                    box NVecElim(
-                        box evalC(a,env),
-                        box evalC(m, env),
-                        box mnVal.dup(),
-                        box mcVal.dup(),
-                        box nVal.dup(),
-                        box n.dup())),
-                _ => unreachable!(format!("unknown VecElim match {:?}", xsVal))
-            }).call((&evalC(n,env), &evalC(xs,env)))
+            })
+            .call(&evalC(k, env))
         }
-        _ => unreachable!(),
+        Vec(a, n) => VVec(box evalC(a, env), box evalC(n, env)),
+        VecElim(a, m, mn, mc, n, xs) => {
+            let mnVal = evalC(mn, env);
+            let mcVal = evalC(mc, env);
+            fix!(|rec, (nVal, xsVal): (&Value, &_)| match xsVal {
+                VNil(_) => mnVal.dup(),
+                VCons(_, box l, box x, box xs) => [l, x, xs, &rec.call((l, xs))]
+                    .iter()
+                    .fold(mcVal.dup(), |a, &b| vapp(&a, b))
+                    .dup(),
+                VNeutral(n) => VNeutral(box NVecElim(
+                    box evalC(a, env),
+                    box evalC(m, env),
+                    box mnVal.dup(),
+                    box mcVal.dup(),
+                    box nVal.dup(),
+                    box n.dup()
+                )),
+                _ => unreachable!(format!("unknown VecElim match {:?}", xsVal)),
+            })
+            .call((&evalC(n, env), &evalC(xs, env)))
+        }
+        Nil(a) => VNil(box evalC(a, env)),
+        Cons(a, n, x, xs) => VCons(
+            box evalC(a, env),
+            box evalC(n, env),
+            box evalC(x, env),
+            box evalC(xs, env),
+        ),
     }
 }
 
