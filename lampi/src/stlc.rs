@@ -160,16 +160,11 @@ fn lookup<'a, 'b>(c: &'a Ctx, n: &'b Name) -> Option<&'a Info> {
 #[allow(non_snake_case)]
 fn kindC(ctx: &Ctx, t: &Type, k: &Kind) -> Result<()> {
     match (t, k) {
-        (Type::TFree(x), Kind::Star) => {
-            if let Some(x) = lookup(ctx, x) {
-                match x {
-                    Info::HasKind(box Kind::Star) => Ok(()),
-                    _ => panic!("unhandled case {:?}", x),
-                }
-            } else {
-                Err(format!("unk var identifier {:?}", x))
-            }
-        }
+        (Type::TFree(x), Kind::Star) => match lookup(ctx, x) {
+            Some(Info::HasKind(box Kind::Star)) => Ok(()),
+            None => Err(format!("unk var identifier {:?}", x)),
+            _ => panic!("unhandled case {:?}", x),
+        },
         (Type::Fun(k, k1), Kind::Star) => {
             kindC(ctx, k, &Kind::Star)?;
             kindC(ctx, k1, &Kind::Star)
