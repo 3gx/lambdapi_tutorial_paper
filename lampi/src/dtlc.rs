@@ -3,6 +3,9 @@ use std::rc::Rc;
 type Int = i32;
 
 trait Dup: Sized + Clone {
+    fn b(self: &Self) -> Box<Self> {
+        box self.clone()
+    }
     fn dup(self: &Self) -> Self {
         self.clone()
     }
@@ -311,7 +314,7 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                         VPi(box vapp(&mVal, l), {
                             let l = l.dup();
                             let mVal = mVal.dup();
-                            Rc::new(move |_| vapp(&mVal, &VSucc(box l.dup())))
+                            Rc::new(move |_| vapp(&mVal, &VSucc(l.b())))
                         })
                     })
                 }),
@@ -336,7 +339,7 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
             typeC(i, ctx, k, &VNat)?;
             let kVal = evalC(k, &Env::new());
             typeC(i, ctx, x, &aVal)?;
-            typeC(i, ctx, xs, &VVec(box aVal.dup(), box kVal.dup()))?;
+            typeC(i, ctx, xs, &VVec(aVal.b(), kVal.b()))?;
             Ok(VVec(box aVal, box VSucc(box kVal)))
         }
         VecElim(a, m, mn, mc, k, vs) => {
@@ -350,7 +353,7 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                     let aVal = aVal.dup();
                     Rc::new(move |k| {
                         VPi(
-                            box VVec(box aVal.dup(), box k.dup()), //
+                            box VVec(aVal.b(), k.b()), //
                             Rc::new(|_| VStar),
                         )
                     })
@@ -361,7 +364,7 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                 i,
                 ctx,
                 mn,
-                &[VZero, VNil(box aVal.dup())]
+                &[VZero, VNil(aVal.b())]
                     .iter()
                     .fold(mVal.dup(), |a, b| vapp(&a, &b)),
             )?;
@@ -373,7 +376,7 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                     let aVal = aVal.dup();
                     let mVal = mVal.dup();
                     Rc::new(move |l| {
-                        VPi(box aVal.dup(), {
+                        VPi(aVal.b(), {
                             let l = l.dup();
                             let aVal = aVal.dup();
                             let mVal = mVal.dup();
@@ -381,7 +384,7 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                                 let l = l.dup();
                                 let aVal = aVal.dup();
                                 let mVal = mVal.dup();
-                                VPi(box VVec(box aVal.dup(), box l.dup()), {
+                                VPi(box VVec(aVal.b(), l.b()), {
                                     let l = l.dup();
                                     let y = y.dup();
                                     let aVal = aVal.dup();
@@ -403,12 +406,12 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                                                 let mVal = mVal.dup();
                                                 Rc::new(move |_| {
                                                     [
-                                                        VSucc(box l.dup()),
+                                                        VSucc(l.b()),
                                                         VCons(
-                                                            box aVal.dup(),
-                                                            box l.dup(),
-                                                            box y.dup(),
-                                                            box ys.dup(),
+                                                            aVal.b(),
+                                                            l.b(),
+                                                            y.b(),
+                                                            ys.b(),
                                                         ),
                                                     ]
                                                     .iter()
@@ -459,9 +462,38 @@ fn quote0(v: &Value) -> TermC {
 }
 
 fn quote(i: Int, v: &Value) -> TermC {
-    unimplemented!()
+    use {Value::*, TermC::*, TermI::*, Name::*};
+    match v {
+        VLam(f) => Lam(box quote(i+1, &f(&vfree(Quote(i))))),
+        VStar => Inf(box Star),
+        VPi(v,f) => Inf(box Pi(box quote(i,v),
+                        box quote(i+1, &f(&vfree(Quote(i)))))),
+        VNeutral(n) => Inf(box neutralQuote(i,n)),
+        VNat => Inf(box Nat),
+        VZero => Inf(box Zero),
+        VSucc(v) => Inf(box Succ(box quote(i,v))),
+        _ => panic!("unhadled match {:?}", v)
+    }
 }
 
 fn substC(i: Int, ti: &TermI, tc: &TermC) -> TermC {
     unimplemented!()
+}
+
+#[allow(non_snake_case)]
+fn neutralQuote(i: Int, n: &Neutral) -> TermI {
+    use {Neutral::*, TermI::*};
+    match n {
+        NFree(x) => boundfree(i,x),
+        NApp(n,v) => App(box neutralQuote(i,n), box quote(i,v)),
+        _ => panic!("unhandled case {:?}", n)
+    }
+}
+
+fn boundfree(i: Int, n: &Name) -> TermI {
+    use {Name::*, TermI::*};
+    match n {
+        Quote(k) => Bound(i-k-1),
+        x => Free(x.b()),
+    }
 }
