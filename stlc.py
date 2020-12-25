@@ -361,8 +361,8 @@ def boundfree(i : int, x : Name) -> TermI:
     else:
         return Free(x)
 
-e0 = quote0 (VLam (lambda x : VLam (lambda y : x)))
-print(e0)
+#e0 = quote0 (VLam (lambda x : VLam (lambda y : x)))
+#print(e0)
 
 id_ = Lam (Inf (Bound(0)))
 const_ = Lam (Lam (Inf (Bound(1))))

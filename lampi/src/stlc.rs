@@ -1,5 +1,4 @@
 type Int = i32;
-use std::rc::Rc;
 
 pub fn test() -> i32 {
     42
@@ -62,6 +61,7 @@ impl Boxed for Type {}
 
 // ---------------------------------------------------------------------------
 
+use std::rc::Rc;
 #[derive(Clone)]
 pub enum Value {
     VLam(Rc<dyn Fn(&Value) -> Value>),
@@ -69,9 +69,18 @@ pub enum Value {
 }
 impl Boxed for Value {}
 
+impl std::fmt::Debug for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::VLam(_) => write!(f, "VLam(_)"),
+            Value::VNeutral(b) => write!(f, "VNeutral({:?})", b),
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Neutral {
     NFree(Box<Name>),
     NApp(Box<Neutral>, Box<Value>),

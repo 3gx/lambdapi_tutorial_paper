@@ -55,6 +55,8 @@ fn main() {
     println!("count= {:?} {:?} {:?}", a, b, c);
 
     {
+        println!("");
+        println!("-=- STLC -=-");
         use lampi::stlc::*;
         use {Boxed, Info::*, Kind::*, Name::*, TermC::*, TermI::*, Type::*};
         let id1 = || Lam(Inf(Bound(0).b()).b()).b();
@@ -89,10 +91,23 @@ fn main() {
             (global("y"), hastype(&tfree("a"))),
             (global("a"), haskind(&Star)),
         ]);
-        let mut env2 = env1;
+        let mut env2 = env1.clone();
         env2.push_front((global("b"), haskind(&Star)));
 
-        let e1 = quote0(&evalI(&term1, &Env::new()));
-        println!("e1= {:?}", e1);
+        let t0 = evalI(&term1, &Env::new());
+        println!("t0= {:?}", t0);
+        let t1 = quote0(&evalI(&term1, &Env::new()));
+        println!("t1= {:?}", t1);
+        let t2 = quote0(&evalI(&term2, &Env::new()));
+        println!("t2= {:?}", t2);
+        let t3 = typeI0(&env1, &term1);
+        println!("t3= {:?}", t3);
+        let t4 = typeI0(&env2, &term2);
+        println!("t4= {:?}", t4);
+    }
+
+    {
+        println!("");
+        println!("-=- DTLC -=-");
     }
 }
