@@ -330,7 +330,15 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
             let aVal = evalC(a, &Env::new());
             Ok(VVec(box aVal, box VZero))
         }
-        Cons(a, k, x, xs) => unimplemented!(),
+        Cons(a, k, x, xs) => {
+            typeC(i, ctx, a, &VStar)?;
+            let aVal = evalC(a, &Env::new());
+            typeC(i, ctx, k, &VNat)?;
+            let kVal = evalC(k, &Env::new());
+            typeC(i, ctx, x, &aVal)?;
+            typeC(i, ctx, xs, &VVec(box aVal.dup(), box kVal.dup()))?;
+            Ok(VVec(box aVal, box VSucc(box kVal)))
+        }
         VecElim(a, m, mn, mc, k, vs) => unimplemented!(),
         _ => unreachable!("unhandled {:?}", trm),
     }
