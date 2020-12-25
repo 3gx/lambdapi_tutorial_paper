@@ -107,5 +107,6 @@ fn main() {
     {
         println!("");
         println!("-=- DTLC -=-");
+        use lampi::dtlc::*;
     }
 }
