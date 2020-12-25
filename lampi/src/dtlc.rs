@@ -46,7 +46,7 @@ macro_rules! fix_once {
 
 // ---------------------------------------------------------------------------
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub enum TermI {
     Ann(Box<TermC>, Box<TermC>),
     Star,
@@ -74,7 +74,7 @@ impl Dup for TermI {}
 
 // ---------------------------------------------------------------------------
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub enum TermC {
     Inf(Box<TermI>),
     Lam(Box<TermC>),
@@ -83,7 +83,7 @@ impl Dup for TermC {}
 
 // ---------------------------------------------------------------------------
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub enum Name {
     Global(String),
     Local(Int),
@@ -248,28 +248,64 @@ type Result<T> = std::result::Result<T, String>;
 
 #[allow(non_snake_case)]
 pub fn typeI0(ctx: &Context, trm: &TermI) -> Result<Type> {
-    typeI(0,ctx,trm)
+    typeI(0, ctx, trm)
 }
 
 #[allow(non_snake_case)]
-fn typeI(i: Int, ctx: &Context, trm :&TermI) -> Result<Type> {
+fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
     use {TermI::*, Value::*};
     match trm {
-        Ann(e,p) => unimplemented!(),
+        Ann(e, p) => {
+            typeC(i, ctx, p, &VStar)?;
+            let t = evalC(p, &Env::new());
+            typeC(i, ctx, e, &t)?;
+            Ok(t.dup())
+        }
         Star => Ok(VStar),
-        Pi(p,p1) => unimplemented!(),
+        Pi(p, p1) => unimplemented!(),
         Free(x) => unimplemented!(),
         Bound(i) => unimplemented!(),
-        App(e,ep) => unimplemented!(),
+        App(e, ep) => unimplemented!(),
         Nat => Ok(VStar),
         Zero => Ok(VNat),
         Succ(k) => unimplemented!(),
-        NatElim(m,mz,ms,k) => unimplemented!(),
-        Vec(a,k) => unimplemented!(),
+        NatElim(m, mz, ms, k) => unimplemented!(),
+        Vec(a, k) => unimplemented!(),
         Nil(a) => unimplemented!(),
-        Cons(a,k,x,xs) => unimplemented!(),
-        VecElim(a,m,mn,mc,k,vs) => unimplemented!(),
+        Cons(a, k, x, xs) => unimplemented!(),
+        VecElim(a, m, mn, mc, k, vs) => unimplemented!(),
     }
 }
 
+#[allow(non_snake_case)]
+fn typeC(i: Int, ctx: &Context, trm: &TermC, typ: &Type) -> Result<()> {
+    use {Name::*, TermC::*, TermI::*, Value::*};
+    match (trm, typ) {
+        (Inf(e), _) => {
+            let v1 = typeI(i, ctx, e)?;
+            if quote0(typ) != quote0(&v1) {
+                return Err(format!("type mismatch {:?}", (typ, v1)));
+            }
+            Ok(())
+        }
+        (Lam(e), VPi(t, tp)) => typeC(
+            i + 1,
+            &[&[(Local(i), t.dup())], &ctx[..]].concat(),
+            &substC(0, &Free(box Local(i)), e),
+            &tp(&vfree(Local(i))),
+        ),
+        _ => unreachable!(),
+    }
+}
 
+fn quote0(v: &Value) -> TermC {
+    quote(0, v)
+}
+
+fn quote(i: Int, v: &Value) -> TermC {
+    unimplemented!()
+}
+
+fn substC(i: Int, ti: &TermI, tc: &TermC) -> TermC {
+    unimplemented!()
+}
