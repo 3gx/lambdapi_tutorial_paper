@@ -242,7 +242,7 @@ fn evalC(trm: &TermC, env: &Env) -> Value {
     }
 }
 
-pub fn vapp(val: &Value, v: &Value) -> Value {
+fn vapp(val: &Value, v: &Value) -> Value {
     use {Neutral::*, Value::*};
     match val {
         VLam(f) => f(v),
@@ -542,4 +542,12 @@ fn boundfree(i: Int, n: &Name) -> TermI {
         Quote(k) => Bound(i - k - 1),
         x => Free(x.b()),
     }
+}
+
+pub fn vapply(f: &Value, args: &Vec<Value>) -> Value {
+    let mut f = f.dup();
+    for arg in args {
+        f = vapp(&f, arg)
+    }
+    f
 }
