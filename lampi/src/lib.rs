@@ -1,3 +1,3 @@
 #![feature(box_patterns, box_syntax)]
-pub mod stlc;
 pub mod dtlc;
+pub mod stlc;

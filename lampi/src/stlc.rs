@@ -1,6 +1,6 @@
 type Int = i32;
 
-pub fn test() -> i32 {
+pub fn test() -> Int {
     42
 }
 
@@ -14,7 +14,7 @@ enum TermI {
 };
  */
 
-pub trait Boxed: Sized + Clone {
+trait Boxed: Sized + Clone {
     fn b(self: &Self) -> Box<Self> {
         box self.clone()
     }
@@ -124,7 +124,7 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
 }
 
 #[allow(non_snake_case)]
-pub fn evalC(trm: &TermC, env: &Env) -> Value {
+fn evalC(trm: &TermC, env: &Env) -> Value {
     match trm {
         TermC::Inf(i) => evalI(i, env),
         TermC::Lam(e) => {
@@ -139,7 +139,7 @@ pub fn evalC(trm: &TermC, env: &Env) -> Value {
     }
 }
 
-pub fn vapp(v1: &Value, v: &Value) -> Value {
+fn vapp(v1: &Value, v: &Value) -> Value {
     match v1 {
         Value::VLam(f) => f(v),
         Value::VNeutral(n) => Value::VNeutral(Neutral::NApp(n.b(), v.b()).b()),
@@ -178,7 +178,7 @@ pub fn typeI0(c: &Ctx, term: &TermI) -> Result<Type> {
 }
 
 #[allow(non_snake_case)]
-pub fn typeI(i: Int, c: &Ctx, trm: &TermI) -> Result<Type> {
+fn typeI(i: Int, c: &Ctx, trm: &TermI) -> Result<Type> {
     match trm {
         TermI::Ann(e, t) => {
             kindC(c, &t, &Kind::Star)?;
@@ -210,7 +210,7 @@ pub fn typeI(i: Int, c: &Ctx, trm: &TermI) -> Result<Type> {
 }
 
 #[allow(non_snake_case)]
-pub fn typeC(i: Int, c: &Ctx, term: &TermC, typ: &Type) -> Result<()> {
+fn typeC(i: Int, c: &Ctx, term: &TermC, typ: &Type) -> Result<()> {
     match (term, typ) {
         (TermC::Inf(e), _) => {
             let tp = &typeI(i, c, e)?;
