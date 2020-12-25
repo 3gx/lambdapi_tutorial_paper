@@ -19,11 +19,21 @@ macro_rules! clone {
     */
 }
 
+/*
 macro_rules! closure {
     ([$($tt:tt)*], $closure:expr) => {
         {
         clone!($($tt)*);
         $closure
+        }
+    };
+}
+*/
+macro_rules! rc_closure {
+    ([$($tt:tt)*], $closure:expr) => {
+        {
+        clone!($($tt)*);
+        Rc::new($closure)
         }
     };
 }
@@ -35,7 +45,6 @@ macro_rules! closure1 {
         }
     };
 }
-
 
 type Int = i32;
 
@@ -207,10 +216,10 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
         Star => VStar,
         Pi(t, tp) => VPi(
             box evalC(t, env),
-            closure1!(
+            closure1![
                 [tp, env],
                 Rc::new(move |x| evalC(&tp, &[&[x.dup()], &env[..]].concat()))
-            ),
+            ],
         ),
         Free(x) => vfree(x.dup()),
         Bound(i) => env[*i as usize].dup(),
@@ -413,40 +422,25 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                 mc,
                 &VPi(
                     VNat.b(),
-                    closure!(
-                        [aVal, mVal],
-                        Rc::new(move |l| {
-                            VPi(aVal.b(), {
-                                clone!(l, aVal, mVal);
-                                Rc::new(move |y| {
-                                    clone!(l, aVal, mVal);
-                                    VPi(VVec(aVal.b(), l.b()).b(), {
-                                        clone!(l, y, aVal, mVal);
-                                        Rc::new(move |ys| {
-                                            clone!(l, y, aVal, mVal);
-                                            VPi(
-                                                [l.dup(), ys.dup()]
-                                                    .iter()
-                                                    .fold(mVal.dup(), |a, b| vapp(&a, &b))
-                                                    .b(),
-                                                {
-                                                    clone!(l, y, ys, aVal, mVal);
-                                                    Rc::new(move |_| {
-                                                        [
-                                                            VSucc(l.b()),
-                                                            VCons(aVal.b(), l.b(), y.b(), ys.b()),
-                                                        ]
-                                                        .iter()
-                                                        .fold(mVal.dup(), |a, b| vapp(&a, &b))
-                                                    })
-                                                },
-                                            )
-                                        })
-                                    })
-                                })
-                            })
-                        })
-                    ),
+                    rc_closure!([aVal, mVal], move |l| {
+                        VPi(
+                            aVal.b(),
+                            rc_closure![[l, aVal, mVal], move |y| VPi(
+                                VVec(aVal.b(), l.b()).b(),
+                                rc_closure![[l, y, aVal, mVal], move |ys| VPi(
+                                    [l.dup(), ys.dup()]
+                                        .iter()
+                                        .fold(mVal.dup(), |a, b| vapp(&a, &b))
+                                        .b(),
+                                    rc_closure![[l, y, ys, aVal, mVal], move |_| {
+                                        [VSucc(l.b()), VCons(aVal.b(), l.b(), y.b(), ys.b())]
+                                            .iter()
+                                            .fold(mVal.dup(), |a, b| vapp(&a, &b))
+                                    }],
+                                )]
+                            )],
+                        )
+                    }),
                 ),
             )?;
             typeC(i, ctx, k, &VNat)?;
