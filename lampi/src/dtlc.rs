@@ -407,12 +407,7 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                                                 Rc::new(move |_| {
                                                     [
                                                         VSucc(l.b()),
-                                                        VCons(
-                                                            aVal.b(),
-                                                            l.b(),
-                                                            y.b(),
-                                                            ys.b(),
-                                                        ),
+                                                        VCons(aVal.b(), l.b(), y.b(), ys.b()),
                                                     ]
                                                     .iter()
                                                     .fold(mVal.dup(), |a, b| vapp(&a, &b))
@@ -426,11 +421,11 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                     })
                 }),
             )?;
-            typeC(i,ctx,k,&VNat)?;
+            typeC(i, ctx, k, &VNat)?;
             let kVal = evalC(k, &Env::new());
-            typeC(i,ctx,vs, &VVec(box aVal.dup(), box kVal.dup()))?;
+            typeC(i, ctx, vs, &VVec(box aVal.dup(), box kVal.dup()))?;
             let vsVal = evalC(vs, &Env::new());
-            Ok([kVal, vsVal].iter().fold(mVal, |a,b| vapp(&a,&b)))
+            Ok([kVal, vsVal].iter().fold(mVal, |a, b| vapp(&a, &b)))
         }
         _ => unreachable!("unhandled {:?}", trm),
     }
@@ -462,21 +457,34 @@ fn quote0(v: &Value) -> TermC {
 }
 
 fn quote(i: Int, v: &Value) -> TermC {
-    use {Value::*, TermC::*, TermI::*, Name::*};
+    use {Name::*, TermC::*, TermI::*, Value::*};
     match v {
-        VLam(f) => Lam(box quote(i+1, &f(&vfree(Quote(i))))),
+        VLam(f) => Lam(box quote(i + 1, &f(&vfree(Quote(i))))),
         VStar => Inf(box Star),
-        VPi(v,f) => Inf(box Pi(box quote(i,v),
-                        box quote(i+1, &f(&vfree(Quote(i)))))),
-        VNeutral(n) => Inf(box neutralQuote(i,n)),
+        VPi(v, f) => Inf(box Pi(
+            box quote(i, v),
+            box quote(i + 1, &f(&vfree(Quote(i)))),
+        )),
+        VNeutral(n) => Inf(box neutralQuote(i, n)),
         VNat => Inf(box Nat),
         VZero => Inf(box Zero),
-        VSucc(v) => Inf(box Succ(box quote(i,v))),
-        _ => panic!("unhadled match {:?}", v)
+        VSucc(v) => Inf(box Succ(box quote(i, v))),
+        _ => panic!("unhadled match {:?}", v),
     }
 }
 
+#[allow(non_snake_case)]
 fn substC(i: Int, ti: &TermI, tc: &TermC) -> TermC {
+    use TermC::*;
+    match tc {
+        Inf(e) => Inf(box substI(i, ti, e)),
+        Lam(e) => Lam(box substC(i + 1, ti, e)),
+    }
+}
+
+#[allow(non_snake_case)]
+fn substI(i: Int, r: &TermI, ti: &TermI) -> TermI {
+    use TermI::*;
     unimplemented!()
 }
 
@@ -484,16 +492,16 @@ fn substC(i: Int, ti: &TermI, tc: &TermC) -> TermC {
 fn neutralQuote(i: Int, n: &Neutral) -> TermI {
     use {Neutral::*, TermI::*};
     match n {
-        NFree(x) => boundfree(i,x),
-        NApp(n,v) => App(box neutralQuote(i,n), box quote(i,v)),
-        _ => panic!("unhandled case {:?}", n)
+        NFree(x) => boundfree(i, x),
+        NApp(n, v) => App(box neutralQuote(i, n), box quote(i, v)),
+        _ => panic!("unhandled case {:?}", n),
     }
 }
 
 fn boundfree(i: Int, n: &Name) -> TermI {
     use {Name::*, TermI::*};
     match n {
-        Quote(k) => Bound(i-k-1),
+        Quote(k) => Bound(i - k - 1),
         x => Free(x.b()),
     }
 }
