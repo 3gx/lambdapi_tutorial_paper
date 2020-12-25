@@ -220,6 +220,7 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
     }
 }
 
+#[allow(non_snake_case)]
 fn evalC(trm: &TermC, env: &Env) -> Value {
     use {TermC::*, Value::*};
     match trm {
@@ -242,3 +243,33 @@ fn vapp(val: &Value, v: &Value) -> Value {
         _ => unreachable!(),
     }
 }
+
+type Result<T> = std::result::Result<T, String>;
+
+#[allow(non_snake_case)]
+pub fn typeI0(ctx: &Context, trm: &TermI) -> Result<Type> {
+    typeI(0,ctx,trm)
+}
+
+#[allow(non_snake_case)]
+fn typeI(i: Int, ctx: &Context, trm :&TermI) -> Result<Type> {
+    use {TermI::*, Value::*};
+    match trm {
+        Ann(e,p) => unimplemented!(),
+        Star => Ok(VStar),
+        Pi(p,p1) => unimplemented!(),
+        Free(x) => unimplemented!(),
+        Bound(i) => unimplemented!(),
+        App(e,ep) => unimplemented!(),
+        Nat => Ok(VStar),
+        Zero => Ok(VNat),
+        Succ(k) => unimplemented!(),
+        NatElim(m,mz,ms,k) => unimplemented!(),
+        Vec(a,k) => unimplemented!(),
+        Nil(a) => unimplemented!(),
+        Cons(a,k,x,xs) => unimplemented!(),
+        VecElim(a,m,mn,mc,k,vs) => unimplemented!(),
+    }
+}
+
+
