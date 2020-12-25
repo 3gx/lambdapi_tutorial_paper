@@ -111,7 +111,7 @@ impl Boxed for Info {}
 // ---------------------------------------------------------------------------
 
 use std::collections::VecDeque;
-pub type Env = VecDeque<Value>;
+pub type Env = Vec<Value>;
 
 #[allow(non_snake_case)]
 pub fn evalI(trm: &TermI, env: &Env) -> Value {
@@ -131,9 +131,7 @@ fn evalC(trm: &TermC, env: &Env) -> Value {
             let env = env.clone();
             let e = e.dup();
             Value::VLam(Rc::new(move |x| {
-                let mut env = env.clone();
-                env.push_front(x.dup());
-                evalC(&e, &env)
+                evalC(&e, &[&[x.dup()], &env[..]].concat())
             }))
         }
     }
