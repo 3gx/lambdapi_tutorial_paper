@@ -22,7 +22,9 @@ impl<'a, T, U> Fix1<'a, T, U> {
 }
 
 macro_rules! fix1 {
-    ($e:expr) => { Fix1{ f: &$e } }
+    ($e:expr) => {
+        Fix1 { f: &$e }
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -156,19 +158,17 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
         NatElim(box m, mz, ms, box k) => {
             let mzVal = evalC(mz, env);
             let msVal = evalC(ms, env);
-            let rec = fix1!(
-                 |rec, kVal| match kVal {
-                    VZero => mzVal.dup(),
-                    VSucc(box ref l) => vapp(&vapp(&msVal, l), &rec.call(l)),
-                    VNeutral(box k) => VNeutral(box NNatElim(
-                        box evalC(m, env),
-                        box mzVal.dup(),
-                        box msVal.dup(),
-                        box k.dup(),
-                    )),
-                    _ => unreachable!(format!("unknown natElim match {:?}", kVal)),
-                }
-            );
+            let rec = fix1!(|rec, kVal| match kVal {
+                VZero => mzVal.dup(),
+                VSucc(box ref l) => vapp(&vapp(&msVal, l), &rec.call(l)),
+                VNeutral(box k) => VNeutral(box NNatElim(
+                    box evalC(m, env),
+                    box mzVal.dup(),
+                    box msVal.dup(),
+                    box k.dup(),
+                )),
+                _ => unreachable!(format!("unknown natElim match {:?}", kVal)),
+            });
             rec.call(&evalC(k, env))
         }
         _ => unreachable!(),
