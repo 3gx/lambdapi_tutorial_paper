@@ -192,7 +192,7 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
         VecElim(a, m, mn, mc, n, xs) => {
             let mnVal = evalC(mn, env);
             let mcVal = evalC(mc, env);
-            fix!(|rec, (nVal, xsVal): (&Value, &_)| match xsVal {
+            let frec = fix!(|rec, (nVal, xsVal): (&Value, &_)| match xsVal {
                 VNil(_) => mnVal.dup(),
                 VCons(_, box l, box x, box xs) => [l, x, xs, &rec.call((l, xs))]
                     .iter()
@@ -207,8 +207,8 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
                     box n.dup()
                 )),
                 _ => unreachable!(format!("unknown VecElim match {:?}", xsVal)),
-            })
-            .call((&evalC(n, env), &evalC(xs, env)))
+            });
+            frec.call((&evalC(n, env), &evalC(xs, env)))
         }
         Nil(a) => VNil(box evalC(a, env)),
         Cons(a, n, x, xs) => VCons(
