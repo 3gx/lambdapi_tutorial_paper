@@ -3,9 +3,6 @@ use std::rc::Rc;
 type Int = i32;
 
 trait Dup: Sized + Clone {
-    //    fn b(self: &Self) -> Box<Self> {
-    //       box self.clone()
-    //    }
     fn dup(self: &Self) -> Self {
         self.clone()
     }
@@ -154,6 +151,13 @@ fn vfree(n: Name) -> Value {
 
 type Env = Vec<Value>;
 type Context = Vec<(Name, Type)>;
+fn lookup<'a, 'b>(c: &'a Context, n: &'b Name) -> Option<&'a Type> {
+    if let Some((_, i)) = c.iter().find(|x| x.0 == *n) {
+        Some(i)
+    } else {
+        None
+    }
+}
 
 #[allow(non_snake_case)]
 pub fn evalI(trm: &TermI, env: &Env) -> Value {
@@ -192,7 +196,7 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
         VecElim(a, m, mn, mc, n, xs) => {
             let mnVal = evalC(mn, env);
             let mcVal = evalC(mc, env);
-            let frec = fix!(|fun, (nVal, xsVal): (&Value, &_)| match xsVal {
+            let frec = fix!(|fun, (&ref nVal, &ref xsVal)| match xsVal {
                 VNil(_) => mnVal.dup(),
                 VCons(_, box l, box x, box xs) => [l, x, xs, &fun.call((l, xs))]
                     .iter()
@@ -253,7 +257,7 @@ pub fn typeI0(ctx: &Context, trm: &TermI) -> Result<Type> {
 
 #[allow(non_snake_case)]
 fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
-    use {TermI::*, Value::*};
+    use {Name::*, TermI::*, Value::*};
     match trm {
         Ann(e, p) => {
             typeC(i, ctx, p, &VStar)?;
@@ -262,18 +266,73 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
             Ok(t.dup())
         }
         Star => Ok(VStar),
-        Pi(p, p1) => unimplemented!(),
-        Free(x) => unimplemented!(),
-        Bound(i) => unimplemented!(),
-        App(e, ep) => unimplemented!(),
+        Pi(p, p1) => {
+            typeC(i, ctx, p, &VStar)?;
+            let t = evalC(p, &Env::new());
+            typeC(
+                i + 1,
+                &[&[(Local(i), t.dup())], &ctx[..]].concat(),
+                &substC(0, &Free(box Local(i)), p1),
+                &VStar,
+            )?;
+            Ok(VStar)
+        }
+        Free(x) => match lookup(ctx, x) {
+            Some(t) => Ok(t.dup()),
+            None => Err(format!("unk typevar {:?}", x)),
+        },
+        App(e, ep) => {
+            let s = typeI(i, ctx, e)?;
+            match s {
+                VPi(box ref t, tp) => {
+                    typeC(i, ctx, ep, t)?;
+                    Ok(tp(&evalC(ep, &Env::new())))
+                }
+                _ => panic!("illegal application {:?}", (e, ep)),
+            }
+        }
         Nat => Ok(VStar),
         Zero => Ok(VNat),
-        Succ(k) => unimplemented!(),
-        NatElim(m, mz, ms, k) => unimplemented!(),
-        Vec(a, k) => unimplemented!(),
-        Nil(a) => unimplemented!(),
+        Succ(k) => {
+            typeC(i, ctx, k, &VNat)?;
+            Ok(VNat)
+        }
+        NatElim(m, mz, ms, k) => {
+            typeC(i, ctx, m, &VPi(box VNat, Rc::new(|_| VStar)))?;
+            let mVal = evalC(m, &Env::new());
+            typeC(i, ctx, mz, &vapp(&mVal, &VZero))?;
+            typeC(
+                i,
+                ctx,
+                ms,
+                &VPi(box VNat, {
+                    let mVal = mVal.dup();
+                    Rc::new(move |l| {
+                        VPi(box vapp(&mVal, l), {
+                            let l = l.dup();
+                            let mVal = mVal.dup();
+                            Rc::new(move |_| vapp(&mVal, &VSucc(box l.dup())))
+                        })
+                    })
+                }),
+            )?;
+            typeC(i, ctx, k, &VNat)?;
+            let kVal = evalC(k, &Env::new());
+            Ok(vapp(&mVal, &kVal))
+        }
+        Vec(a, k) => {
+            typeC(i, ctx, a, &VStar)?;
+            typeC(i, ctx, k, &VNat)?;
+            Ok(VStar)
+        }
+        Nil(a) => {
+            typeC(i, ctx, a, &VStar)?;
+            let aVal = evalC(a, &Env::new());
+            Ok(VVec(box aVal, box VZero))
+        }
         Cons(a, k, x, xs) => unimplemented!(),
         VecElim(a, m, mn, mc, k, vs) => unimplemented!(),
+        _ => unreachable!("unhandled {:?}", trm),
     }
 }
 
