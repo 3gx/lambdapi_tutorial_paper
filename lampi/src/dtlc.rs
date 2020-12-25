@@ -12,11 +12,11 @@ trait Dup: Sized + Clone {
 }
 
 struct Fix1<'a, T, U> {
-    f: &'a dyn Fn(&Fix1<'a, T, U>, &T) -> U,
+    f: &'a dyn Fn(&Fix1<'a, T, U>, T) -> U,
 }
 
 impl<'a, T, U> Fix1<'a, T, U> {
-    fn call(&self, x: &T) -> U {
+    fn call(&self, x: T) -> U {
         (self.f)(self, x)
     }
 }
@@ -158,7 +158,7 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
         NatElim(box m, mz, ms, box k) => {
             let mzVal = evalC(mz, env);
             let msVal = evalC(ms, env);
-            let rec = fix1!(|rec, kVal| match kVal {
+            fix1!(|rec, &ref kVal| match kVal {
                 VZero => mzVal.dup(),
                 VSucc(box ref l) => vapp(&vapp(&msVal, l), &rec.call(l)),
                 VNeutral(box k) => VNeutral(box NNatElim(
@@ -168,8 +168,18 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
                     box k.dup(),
                 )),
                 _ => unreachable!(format!("unknown natElim match {:?}", kVal)),
-            });
-            rec.call(&evalC(k, env))
+            }).call(&evalC(k,env))
+        },
+        Vec(a,n) => VVec(box evalC(a,env), box evalC(n,env)),
+        VecElim(a,m,mn,mc,n,xs) => {
+            let mnVal = evalC(mn,env);
+            let mcVal = evalC(mc,env);
+            fix1!(|rec, (&ref nVal, &ref xsVal)| match xsVal {
+                VNil(_) => mnVal.dup(),
+                VCons(_, l, x,xs) => unimplemented!(),
+                VNeutral(n) => unimplemented!(),
+                _ => unreachable!(format!("unknown VecElim match {:?}", xsVal))
+            }).call((&evalC(n,env), &evalC(xs,env)))
         }
         _ => unreachable!(),
     }
