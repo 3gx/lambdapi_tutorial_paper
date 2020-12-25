@@ -489,13 +489,10 @@ fn substI(i: Int, r: &TermI, ti: &TermI) -> TermI {
         Ann(e, t) => Ann(substC(i, r, e).b(), t.b()),
         Star => Star,
         Pi(t, tp) => Pi(substC(i, r, t).b(), substC(i + 1, r, tp).b()),
-        &Bound(j) => {
-            if i == j {
-                r.dup()
-            } else {
-                Bound(j)
-            }
-        }
+        &Bound(j) => match j {
+            j if i == j => r.dup(),
+            j => Bound(j),
+        },
         Free(y) => Free(y.b()),
         App(e, ep) => App(substI(i, r, e).b(), substC(i, r, ep).b()),
         Nat => Nat,

@@ -120,30 +120,30 @@ fn main() {
         println!("e0={:?}", e0);
 
         /*
-id_ = Lam(Inf(Bound(0)))
-const_ = Lam(Lam(Inf(Bound(1))))
-free: TLam[[str], TermC] = lambda x: Inf(Free(Global(x)))
-pi: TLam[[TermC, TermC], TermC] = lambda x, y: Inf(Pi(x, y))
-term1 = App(Ann(id_, (pi(free("a"), free("a")))), free("y"))
-term2 = App(
-    App(
-        Ann(
-            const_,
-            pi(pi(free("b"), free("b")), pi(free("a"), pi(free("b"), free("b")))),
-        ),
-        id_,
-    ),
-    free("y"),
-)
-env1: Context = {Global("y"): VNeutral(NFree(Global("a"))), Global("a"): VStar()}
-env2 = env1.copy()
-env2.update({Global("b"): VStar()})
+        id_ = Lam(Inf(Bound(0)))
+        const_ = Lam(Lam(Inf(Bound(1))))
+        free: TLam[[str], TermC] = lambda x: Inf(Free(Global(x)))
+        pi: TLam[[TermC, TermC], TermC] = lambda x, y: Inf(Pi(x, y))
+        term1 = App(Ann(id_, (pi(free("a"), free("a")))), free("y"))
+        term2 = App(
+            App(
+                Ann(
+                    const_,
+                    pi(pi(free("b"), free("b")), pi(free("a"), pi(free("b"), free("b")))),
+                ),
+                id_,
+            ),
+            free("y"),
+        )
+        env1: Context = {Global("y"): VNeutral(NFree(Global("a"))), Global("a"): VStar()}
+        env2 = env1.copy()
+        env2.update({Global("b"): VStar()})
 
-print("eval(term1)=", evalI(term1, []))
-print("qeval(term1)=", quote0(evalI(term1, [])))
-print("qqeval(term2)=", quote0(evalI(term2, [])))
-print("type(term1)=", typeI0(env1, term1))
-print("type(term2)=", typeI0(env2, term2))
-         */
+        print("eval(term1)=", evalI(term1, []))
+        print("qeval(term1)=", quote0(evalI(term1, [])))
+        print("qqeval(term2)=", quote0(evalI(term2, [])))
+        print("type(term1)=", typeI0(env1, term1))
+        print("type(term2)=", typeI0(env2, term2))
+                 */
     }
 }
