@@ -110,7 +110,7 @@ impl Boxed for Info {}
 
 // ---------------------------------------------------------------------------
 
-use std::collections::VecDeque;
+//use std::collections::VecDeque;
 pub type Env = Vec<Value>;
 
 #[allow(non_snake_case)]
@@ -144,7 +144,7 @@ fn vapp(v1: &Value, v: &Value) -> Value {
     }
 }
 
-pub type Ctx = VecDeque<(Name, Info)>;
+pub type Ctx = Vec<(Name, Info)>;
 type Result<T> = std::result::Result<T, String>;
 
 fn lookup<'a, 'b>(c: &'a Ctx, n: &'b Name) -> Option<&'a Info> {
@@ -218,8 +218,7 @@ fn typeC(i: Int, c: &Ctx, term: &TermC, typ: &Type) -> Result<()> {
             Ok(())
         }
         (TermC::Lam(e), Type::Fun(t, tp)) => {
-            let mut c = c.clone();
-            c.push_front((Name::Local(i), Info::HasType(t.b())));
+            let c = [&[(Name::Local(i), Info::HasType(t.b()))], &c[..]].concat();
             let s = substC(0, &TermI::Free(Name::Local(i).b()), e);
             typeC(i + 1, &c, &s, tp)
         }

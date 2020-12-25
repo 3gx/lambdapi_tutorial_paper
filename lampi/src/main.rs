@@ -87,8 +87,7 @@ fn main() {
             (global("y"), hastype(*tfree("a"))),
             (global("a"), haskind(Star)),
         ]);
-        let mut env2 = env1.clone();
-        env2.push_front((global("b"), haskind(Star)));
+        let env2 = Ctx::from([&[(global("b"), haskind(Star))], &env1[..]].concat());
 
         let t0 = evalI(&term1, &Env::new());
         println!("t0= {:?}", t0);
