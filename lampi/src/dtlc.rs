@@ -3,11 +3,21 @@ use std::rc::Rc;
 type Int = i32;
 
 trait Dup: Sized + Clone {
-//    fn b(self: &Self) -> Box<Self> {
- //       box self.clone()
-//    }
+    //    fn b(self: &Self) -> Box<Self> {
+    //       box self.clone()
+    //    }
     fn dup(self: &Self) -> Self {
         self.clone()
+    }
+}
+
+struct Fix1<'a, T, U> {
+    f: &'a dyn Fn(&Fix1<'a, T, U>, &T) -> U,
+}
+
+impl<'a, T, U> Fix1<'a, T, U> {
+    fn call(&self, x: &T) -> U {
+        (self.f)(self, x)
     }
 }
 
@@ -124,7 +134,7 @@ type Context = Vec<(Name, Type)>;
 
 #[allow(non_snake_case)]
 pub fn evalI(trm: &TermI, env: &Env) -> Value {
-    use {TermI::*, Value::*};
+    use {Neutral::*, TermI::*, Value::*};
     match trm {
         Ann(e, _) => evalC(e, env),
         Star => VStar,
@@ -135,41 +145,28 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
         }),
         Free(x) => vfree(x.dup()),
         Bound(i) => env[*i as usize].dup(),
-        App(e,ep) => vapp(&evalI(e,env), &evalC(ep,env)),
+        App(e, ep) => vapp(&evalI(e, env), &evalC(ep, env)),
         Nat => VNat,
         Zero => VZero,
-        Succ(k) => VSucc(box evalC(k,env)),
-        NatElim(m,mz,ms,box k) => {
-            let mzVal = evalC(mz,env);
-            let msVal = evalC(ms,env);
-            struct Fix<'a>{ f: &'a dyn Fn(&Fix, &Value) -> Value }
-            let rec = Fix{f : &|rec,kVal| {
-             match kVal {
-                VZero => mzVal.dup(),
-                VSucc(box ref l) => vapp(&vapp(&msVal,l), &(rec.f)(rec, l)),
-                _ => unreachable!(format!("internal: eval natElim {:?}", kVal))
-            }}};
-            (rec.f)(&rec, &evalC(k,env))
-            /*
-            fn rec(kVal: &Value, s: &S) -> Value {
-                let S(mzVal, msVal) = s;
-                match kVal {
+        Succ(k) => VSucc(box evalC(k, env)),
+        NatElim(box m, mz, ms, box k) => {
+            let mzVal = evalC(mz, env);
+            let msVal = evalC(ms, env);
+            let rec = &Fix1 {
+                f: &|rec, kVal| match kVal {
                     VZero => mzVal.dup(),
-                    VSucc(box ref l) => vapp(&vapp(&msVal,l), &rec(l, s)),
-                    _ => unreachable!(format!("internal: eval natElim {:?}", kVal))
-                }
-            }
-            rec(&evalC(k,env), &S(mzVal, msVal))
-            */
-            /*
-            let rec = |kVal| match kVal {
-                VZero => mzVal,
-                VSucc(box ref l) => vapp(&vapp(&msVal,l), &rec(l)),
-                _ => unreachable!(format!("internal: eval natElim {:?}", kVal))
+                    VSucc(box ref l) => vapp(&vapp(&msVal, l), &rec.call(l)),
+                    VNeutral(box k) => VNeutral(box NNatElim(
+                        box evalC(m, env),
+                        box mzVal.dup(),
+                        box msVal.dup(),
+                        box k.dup(),
+                    )),
+                    _ => unreachable!(format!("unknown natElim match {:?}", kVal)),
+                },
             };
-            rec(evalC(k,env))
-            */
-        },
+            rec.call(&evalC(k, env))
+        }
         _ => unreachable!(),
     }
 }
@@ -188,11 +185,11 @@ fn evalC(trm: &TermC, env: &Env) -> Value {
     }
 }
 
-fn vapp(val : &Value, v : &Value) -> Value {
-    use {Value::*, Neutral::*};
+fn vapp(val: &Value, v: &Value) -> Value {
+    use {Neutral::*, Value::*};
     match val {
         VLam(f) => f(v),
-        VNeutral(n) => VNeutral(box NApp(box n.dup(),box v.dup())),
-        _ => unreachable!()
+        VNeutral(n) => VNeutral(box NApp(box n.dup(), box v.dup())),
+        _ => unreachable!(),
     }
 }
