@@ -22,6 +22,7 @@ trait Boxed: Sized + Clone {
         self.clone()
     }
 }
+
 // ---------------------------------------------------------------------------
 
 #[derive(Clone, Eq, PartialEq, Debug)]
