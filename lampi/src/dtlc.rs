@@ -8,12 +8,23 @@ macro_rules! clone {
         clone!($i);
         clone!($($tt)*);
     };
+    /*
     ($this:ident . $i:ident) => {
         let $i = $this.$i.clone();
     };
     ($this:ident . $i:ident, $($tt:tt)*) => {
         clone!($this . $i);
         clone!($($tt)*);
+    };
+    */
+}
+
+macro_rules! closure {
+    ([$($tt:tt)*], $closure:expr) => {
+        {
+        clone!($($tt)*);
+        $closure
+        }
     };
 }
 
@@ -185,11 +196,13 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
     match trm {
         Ann(e, _) => evalC(e, env),
         Star => VStar,
-        Pi(t, tp) => VPi(box evalC(t, env), {
-            let tp = tp.dup();
-            let env = env.clone();
-            Rc::new(move |x| evalC(&tp, &[&[x.dup()], &env[..]].concat()))
-        }),
+        Pi(t, tp) => VPi(
+            box evalC(t, env),
+            closure!(
+                [tp, env],
+                Rc::new(move |x| evalC(&tp, &[&[x.dup()], &env[..]].concat()))
+            ),
+        ),
         Free(x) => vfree(x.dup()),
         Bound(i) => env[*i as usize].dup(),
         App(e, ep) => vapp(&evalI(e, env), &evalC(ep, env)),
@@ -389,40 +402,43 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                 i,
                 ctx,
                 mc,
-                &VPi(VNat.b(), {
-                    clone!(aVal, mVal);
-                    Rc::new(move |l| {
-                        VPi(aVal.b(), {
-                            clone!(l, aVal, mVal);
-                            Rc::new(move |y| {
+                &VPi(
+                    VNat.b(),
+                    closure!(
+                        [aVal, mVal],
+                        Rc::new(move |l| {
+                            VPi(aVal.b(), {
                                 clone!(l, aVal, mVal);
-                                VPi(VVec(aVal.b(), l.b()).b(), {
-                                    clone!(l, y, aVal, mVal);
-                                    Rc::new(move |ys| {
+                                Rc::new(move |y| {
+                                    clone!(l, aVal, mVal);
+                                    VPi(VVec(aVal.b(), l.b()).b(), {
                                         clone!(l, y, aVal, mVal);
-                                        VPi(
-                                            [l.dup(), ys.dup()]
-                                                .iter()
-                                                .fold(mVal.dup(), |a, b| vapp(&a, &b))
-                                                .b(),
-                                            {
-                                                clone!(l, y, ys, aVal, mVal);
-                                                Rc::new(move |_| {
-                                                    [
-                                                        VSucc(l.b()),
-                                                        VCons(aVal.b(), l.b(), y.b(), ys.b()),
-                                                    ]
+                                        Rc::new(move |ys| {
+                                            clone!(l, y, aVal, mVal);
+                                            VPi(
+                                                [l.dup(), ys.dup()]
                                                     .iter()
                                                     .fold(mVal.dup(), |a, b| vapp(&a, &b))
-                                                })
-                                            },
-                                        )
+                                                    .b(),
+                                                {
+                                                    clone!(l, y, ys, aVal, mVal);
+                                                    Rc::new(move |_| {
+                                                        [
+                                                            VSucc(l.b()),
+                                                            VCons(aVal.b(), l.b(), y.b(), ys.b()),
+                                                        ]
+                                                        .iter()
+                                                        .fold(mVal.dup(), |a, b| vapp(&a, &b))
+                                                    })
+                                                },
+                                            )
+                                        })
                                     })
                                 })
                             })
                         })
-                    })
-                }),
+                    ),
+                ),
             )?;
             typeC(i, ctx, k, &VNat)?;
             let kVal = evalC(k, &Env::new());
