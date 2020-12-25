@@ -175,9 +175,9 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
         NatElim(box m, mz, ms, box k) => {
             let mzVal = evalC(mz, env);
             let msVal = evalC(ms, env);
-            fix!(|fun, &ref kVal| match kVal {
+            fix!(|rec, &ref kVal| match kVal {
                 VZero => mzVal.dup(),
-                VSucc(box ref l) => vapp(&vapp(&msVal, l), &fun.call(l)),
+                VSucc(box ref l) => vapp(&vapp(&msVal, l), &rec.call(l)),
                 VNeutral(box k) => VNeutral(box NNatElim(
                     box evalC(m, env),
                     box mzVal.dup(),
