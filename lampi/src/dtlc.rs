@@ -27,6 +27,15 @@ macro_rules! closure {
         }
     };
 }
+macro_rules! closure1 {
+    ([$($tt:tt)*], $closure:expr) => {
+        {
+        clone!($($tt)*);
+        $closure
+        }
+    };
+}
+
 
 type Int = i32;
 
@@ -198,7 +207,7 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
         Star => VStar,
         Pi(t, tp) => VPi(
             box evalC(t, env),
-            closure!(
+            closure1!(
                 [tp, env],
                 Rc::new(move |x| evalC(&tp, &[&[x.dup()], &env[..]].concat()))
             ),
