@@ -104,6 +104,8 @@ fn main() {
         println!("t3= {:?}", t3);
         let t4 = typeI0(&env2, &term2);
         println!("t4= {:?}", t4);
+        let t5 = typeI0(&env1, &term2);
+        println!("t5= {:?}", t5);
     }
 
     {
