@@ -88,6 +88,7 @@ fn vfree(n: Name) -> Value {
 pub enum Kind {
     Star,
 }
+impl Boxed for Kind {}
 
 // ---------------------------------------------------------------------------
 
@@ -101,7 +102,7 @@ impl Boxed for Info {}
 // ---------------------------------------------------------------------------
 
 use std::collections::VecDeque;
-type Env = VecDeque<Value>;
+pub type Env = VecDeque<Value>;
 
 #[allow(non_snake_case)]
 pub fn evalI(trm: &TermI, env: &Env) -> Value {
@@ -136,7 +137,7 @@ pub fn vapp(v1: &Value, v: &Value) -> Value {
     }
 }
 
-type Ctx = VecDeque<(Name, Info)>;
+pub type Ctx = VecDeque<(Name, Info)>;
 type Result<T> = std::result::Result<T, String>;
 
 fn lookup<'a, 'b>(c: &'a Ctx, n: &'b Name) -> Option<&'a Info> {
@@ -273,4 +274,3 @@ fn boundfree(i: Int, n: &Name) -> TermI {
         _ => TermI::Free(n.b()),
     }
 }
-

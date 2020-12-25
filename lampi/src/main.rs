@@ -55,16 +55,44 @@ fn main() {
     println!("count= {:?} {:?} {:?}", a, b, c);
 
     {
-        use lampi::stlc::{TermC::*, TermI::*, Type::*, Name::*, Boxed};
-        let id1 = Lam(Inf(Bound(0).b()).b());
-        let const1 = Lam(Lam(Inf(Bound(1).b()).b()).b());
-        let tfree = |a : &str| TFree(Global(a.to_string()).b()).b();
-        let free = |x : &str| Inf(Free(Global(x.to_string()).b()).b()).b();
-        let term1 = App(Ann(id1.b(), Fun(tfree("a"), tfree("a")).b()).b(), free("y")).b();
-        let term2 = App(App(Ann(const1.b(), Fun(Fun(tfree("b"), tfree("b")).b(),
-                   Fun(tfree("a"),
-                        Fun(tfree("b"),tfree("b")).b()).b()).b()).b(), id1.b()).b(), free("y")).b();
-        println!("term1= {:?}",term1);
-        println!("term2= {:?}",term2);
+        use lampi::stlc::*;
+        use {Boxed, Info::*, Kind::*, Name::*, TermC::*, TermI::*, Type::*};
+        let id1 = || Lam(Inf(Bound(0).b()).b()).b();
+        let const1 = || Lam(Lam(Inf(Bound(1).b()).b()).b()).b();
+        let tfree = |a: &str| TFree(Global(a.to_string()).b()).b();
+        let free = |x: &str| Inf(Free(Global(x.to_string()).b()).b()).b();
+        let term1 = App(Ann(id1(), Fun(tfree("a"), tfree("a")).b()).b(), free("y")).b();
+        let term2 = App(
+            App(
+                Ann(
+                    const1(),
+                    Fun(
+                        Fun(tfree("b"), tfree("b")).b(),
+                        Fun(tfree("a"), Fun(tfree("b"), tfree("b")).b()).b(),
+                    )
+                    .b(),
+                )
+                .b(),
+                id1(),
+            )
+            .b(),
+            free("y"),
+        )
+        .b();
+        println!("term1= {:?}", term1);
+        println!("term2= {:?}", term2);
+
+        let global = |x: &str| Global(x.to_string());
+        let hastype = |t: &Type| HasType(t.b());
+        let haskind = |k: &Kind| HasKind(k.b());
+        let env1 = Ctx::from(vec![
+            (global("y"), hastype(&tfree("a"))),
+            (global("a"), haskind(&Star)),
+        ]);
+        let mut env2 = env1;
+        env2.push_front((global("b"), haskind(&Star)));
+
+        let e1 = quote0(&evalI(&term1, &Env::new()));
+        println!("e1= {:?}", e1);
     }
 }
