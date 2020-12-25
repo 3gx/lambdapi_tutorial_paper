@@ -339,7 +339,92 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
             typeC(i, ctx, xs, &VVec(box aVal.dup(), box kVal.dup()))?;
             Ok(VVec(box aVal, box VSucc(box kVal)))
         }
-        VecElim(a, m, mn, mc, k, vs) => unimplemented!(),
+        VecElim(a, m, mn, mc, k, vs) => {
+            typeC(i, ctx, a, &VStar)?;
+            let aVal = evalC(a, &Env::new());
+            typeC(
+                i,
+                ctx,
+                m,
+                &VPi(box VNat, {
+                    let aVal = aVal.dup();
+                    Rc::new(move |k| {
+                        VPi(
+                            box VVec(box aVal.dup(), box k.dup()), //
+                            Rc::new(|_| VStar),
+                        )
+                    })
+                }),
+            )?;
+            let mVal = evalC(m, &Env::new());
+            typeC(
+                i,
+                ctx,
+                mn,
+                &[VZero, VNil(box aVal.dup())]
+                    .iter()
+                    .fold(mVal.dup(), |a, b| vapp(&a, &b)),
+            )?;
+            typeC(
+                i,
+                ctx,
+                mc,
+                &VPi(box VNat, {
+                    let aVal = aVal.dup();
+                    let mVal = mVal.dup();
+                    Rc::new(move |l| {
+                        VPi(box aVal.dup(), {
+                            let l = l.dup();
+                            let aVal = aVal.dup();
+                            let mVal = mVal.dup();
+                            Rc::new(move |y| {
+                                let l = l.dup();
+                                let aVal = aVal.dup();
+                                let mVal = mVal.dup();
+                                VPi(box VVec(box aVal.dup(), box l.dup()), {
+                                    let l = l.dup();
+                                    let y = y.dup();
+                                    let aVal = aVal.dup();
+                                    let mVal = mVal.dup();
+                                    Rc::new(move |ys| {
+                                        let l = l.dup();
+                                        let y = y.dup();
+                                        let aVal = aVal.dup();
+                                        let mVal = mVal.dup();
+                                        VPi(
+                                            box [l.dup(), ys.dup()]
+                                                .iter()
+                                                .fold(mVal.dup(), |a, b| vapp(&a, &b)),
+                                            {
+                                                let l = l.dup();
+                                                let y = y.dup();
+                                                let ys = ys.dup();
+                                                let aVal = aVal.dup();
+                                                let mVal = mVal.dup();
+                                                Rc::new(move |_| {
+                                                    [
+                                                        VSucc(box l.dup()),
+                                                        VCons(
+                                                            box aVal.dup(),
+                                                            box l.dup(),
+                                                            box y.dup(),
+                                                            box ys.dup(),
+                                                        ),
+                                                    ]
+                                                    .iter()
+                                                    .fold(mVal.dup(), |a, b| vapp(&a, &b))
+                                                })
+                                            },
+                                        )
+                                    })
+                                })
+                            })
+                        })
+                    })
+                }),
+            )?;
+            unimplemented!()
+        }
         _ => unreachable!("unhandled {:?}", trm),
     }
 }
