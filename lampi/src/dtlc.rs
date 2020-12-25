@@ -485,7 +485,45 @@ fn substC(i: Int, ti: &TermI, tc: &TermC) -> TermC {
 #[allow(non_snake_case)]
 fn substI(i: Int, r: &TermI, ti: &TermI) -> TermI {
     use TermI::*;
-    unimplemented!()
+    match ti {
+        Ann(e, t) => Ann(substC(i, r, e).b(), t.b()),
+        Star => Star,
+        Pi(t, tp) => Pi(substC(i, r, t).b(), substC(i + 1, r, tp).b()),
+        &Bound(j) => {
+            if i == j {
+                r.dup()
+            } else {
+                Bound(j)
+            }
+        }
+        Free(y) => Free(y.b()),
+        App(e, ep) => App(substI(i, r, e).b(), substC(i, r, ep).b()),
+        Nat => Nat,
+        NatElim(m, mz, ms, n) => NatElim(
+            substC(i, r, m).b(),
+            substC(i, r, mz).b(),
+            substC(i, r, ms).b(),
+            substC(i, r, n).b(),
+        ),
+        Zero => Zero,
+        Succ(n) => Succ(substC(i, r, n).b()),
+        Vec(a, n) => Vec(substC(i, r, a).b(), substC(i, r, n).b()),
+        VecElim(a, m, mn, mc, n, xs) => VecElim(
+            substC(i, r, a).b(),
+            substC(i, r, m).b(),
+            substC(i, r, mn).b(),
+            substC(i, r, mc).b(),
+            substC(i, r, n).b(),
+            substC(i, r, xs).b(),
+        ),
+        Nil(a) => Nil(substC(i, r, a).b()),
+        Cons(a, n, x, xs) => Cons(
+            substC(i, r, a).b(),
+            substC(i, r, n).b(),
+            substC(i, r, x).b(),
+            substC(i, r, xs).b(),
+        ),
+    }
 }
 
 #[allow(non_snake_case)]
