@@ -58,41 +58,37 @@ fn main() {
         println!("");
         println!("-=- STLC -=-");
         use lampi::stlc::*;
-        use {Boxed, Info::*, Kind::*, Name::*, TermC::*, TermI::*, Type::*};
-        let id1 = || Lam(Inf(Bound(0).b()).b()).b();
-        let const1 = || Lam(Lam(Inf(Bound(1).b()).b()).b()).b();
-        let tfree = |a: &str| TFree(Global(a.to_string()).b()).b();
-        let free = |x: &str| Inf(Free(Global(x.to_string()).b()).b()).b();
-        let term1 = App(Ann(id1(), Fun(tfree("a"), tfree("a")).b()).b(), free("y")).b();
+        use {Info::*, Kind::*, Name::*, TermC::*, TermI::*, Type::*};
+        let id1 = || box Lam(box Inf(box Bound(0)));
+        let const1 = || box Lam(box Lam(box Inf(box Bound(1))));
+        let tfree = |a: &str| box TFree(box Global(a.to_string()));
+        let free = |x: &str| box Inf(box Free(box Global(x.to_string())));
+        let term1 = box App(box Ann(id1(), box Fun(tfree("a"), tfree("a"))), free("y"));
         let term2 = App(
-            App(
-                Ann(
+            box App(
+                box Ann(
                     const1(),
-                    Fun(
-                        Fun(tfree("b"), tfree("b")).b(),
-                        Fun(tfree("a"), Fun(tfree("b"), tfree("b")).b()).b(),
-                    )
-                    .b(),
-                )
-                .b(),
+                    box Fun(
+                        box Fun(tfree("b"), tfree("b")),
+                        box Fun(tfree("a"), box Fun(tfree("b"), tfree("b"))),
+                    ),
+                ),
                 id1(),
-            )
-            .b(),
+            ),
             free("y"),
-        )
-        .b();
+        );
         println!("term1= {:?}", term1);
         println!("term2= {:?}", term2);
 
         let global = |x: &str| Global(x.to_string());
-        let hastype = |t: &Type| HasType(t.b());
-        let haskind = |k: &Kind| HasKind(k.b());
+        let hastype = |t: Type| HasType(box t);
+        let haskind = |k: Kind| HasKind(box k);
         let env1 = Ctx::from(vec![
-            (global("y"), hastype(&tfree("a"))),
-            (global("a"), haskind(&Star)),
+            (global("y"), hastype(*tfree("a"))),
+            (global("a"), haskind(Star)),
         ]);
         let mut env2 = env1.clone();
-        env2.push_front((global("b"), haskind(&Star)));
+        env2.push_front((global("b"), haskind(Star)));
 
         let t0 = evalI(&term1, &Env::new());
         println!("t0= {:?}", t0);
