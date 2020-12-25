@@ -175,9 +175,9 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
         NatElim(box m, mz, ms, box k) => {
             let mzVal = evalC(mz, env);
             let msVal = evalC(ms, env);
-            fix!(|rec, &ref kVal| match kVal {
+            fix!(|fun, &ref kVal| match kVal {
                 VZero => mzVal.dup(),
-                VSucc(box ref l) => vapp(&vapp(&msVal, l), &rec.call(l)),
+                VSucc(box ref l) => vapp(&vapp(&msVal, l), &fun.call(l)),
                 VNeutral(box k) => VNeutral(box NNatElim(
                     box evalC(m, env),
                     box mzVal.dup(),
@@ -192,9 +192,9 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
         VecElim(a, m, mn, mc, n, xs) => {
             let mnVal = evalC(mn, env);
             let mcVal = evalC(mc, env);
-            let frec = fix!(|rec, (nVal, xsVal): (&Value, &_)| match xsVal {
+            let frec = fix!(|fun, (nVal, xsVal): (&Value, &_)| match xsVal {
                 VNil(_) => mnVal.dup(),
-                VCons(_, box l, box x, box xs) => [l, x, xs, &rec.call((l, xs))]
+                VCons(_, box l, box x, box xs) => [l, x, xs, &fun.call((l, xs))]
                     .iter()
                     .fold(mcVal.dup(), |a, &b| vapp(&a, b))
                     .dup(),
