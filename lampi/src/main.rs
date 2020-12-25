@@ -146,4 +146,20 @@ fn main() {
         print("type(term2)=", typeI0(env2, term2))
                  */
     }
+    {
+        use std::rc::Rc;
+        fn closure_user(closure: Box<dyn Fn(usize) -> bool>) -> bool {
+            closure(3)
+        }
+
+        let big_data = box vec![1, 2, 3, 4];
+        closure_user({
+            let big_data = big_data.clone();
+            Box::new(move |x| {
+                println!("big_data= {:?}  x={}", big_data, x);
+                false
+            })
+        });
+        println!("big_data= {:?}", big_data);
+    }
 }

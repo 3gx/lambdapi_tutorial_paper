@@ -373,37 +373,30 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                 ctx,
                 mc,
                 &VPi(box VNat, {
-                    let aVal = aVal.dup();
-                    let mVal = mVal.dup();
+                    let (aVal, mVal) = (aVal.dup(), mVal.dup());
                     Rc::new(move |l| {
                         VPi(aVal.b(), {
-                            let l = l.dup();
-                            let aVal = aVal.dup();
-                            let mVal = mVal.dup();
+                            let (l, aVal, mVal) = (l.dup(), aVal.dup(), mVal.dup());
                             Rc::new(move |y| {
-                                let l = l.dup();
-                                let aVal = aVal.dup();
-                                let mVal = mVal.dup();
+                                let (l, aVal, mVal) = (l.dup(), aVal.dup(), mVal.dup());
                                 VPi(box VVec(aVal.b(), l.b()), {
-                                    let l = l.dup();
-                                    let y = y.dup();
-                                    let aVal = aVal.dup();
-                                    let mVal = mVal.dup();
+                                    let (l, y, aVal, mVal) =
+                                        (l.dup(), y.dup(), aVal.dup(), mVal.dup());
                                     Rc::new(move |ys| {
-                                        let l = l.dup();
-                                        let y = y.dup();
-                                        let aVal = aVal.dup();
-                                        let mVal = mVal.dup();
+                                        let (l, y, aVal, mVal) =
+                                            (l.dup(), y.dup(), aVal.dup(), mVal.dup());
                                         VPi(
                                             box [l.dup(), ys.dup()]
                                                 .iter()
                                                 .fold(mVal.dup(), |a, b| vapp(&a, &b)),
                                             {
-                                                let l = l.dup();
-                                                let y = y.dup();
-                                                let ys = ys.dup();
-                                                let aVal = aVal.dup();
-                                                let mVal = mVal.dup();
+                                                let (l, y, ys, aVal, mVal) = (
+                                                    l.dup(),
+                                                    y.dup(),
+                                                    ys.dup(),
+                                                    aVal.dup(),
+                                                    mVal.dup(),
+                                                );
                                                 Rc::new(move |_| {
                                                     [
                                                         VSucc(l.b()),
