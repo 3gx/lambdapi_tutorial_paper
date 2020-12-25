@@ -423,7 +423,11 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                     })
                 }),
             )?;
-            unimplemented!()
+            typeC(i,ctx,k,&VNat)?;
+            let kVal = evalC(k, &Env::new());
+            typeC(i,ctx,vs, &VVec(box aVal.dup(), box kVal.dup()))?;
+            let vsVal = evalC(vs, &Env::new());
+            Ok([kVal, vsVal].iter().fold(mVal, |a,b| vapp(&a,&b)))
         }
         _ => unreachable!("unhandled {:?}", trm),
     }
