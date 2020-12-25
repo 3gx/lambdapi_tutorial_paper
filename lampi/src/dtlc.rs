@@ -37,6 +37,14 @@ macro_rules! rc_closure {
         }
     };
 }
+macro_rules! rc_closure1 {
+    ([$($tt:tt)*], $closure:expr) => {
+        {
+        clone!($($tt)*);
+        Rc::new(move $closure)
+        }
+    };
+}
 macro_rules! closure1 {
     ([$($tt:tt)*], $closure:expr) => {
         {
@@ -216,10 +224,10 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
         Star => VStar,
         Pi(t, tp) => VPi(
             box evalC(t, env),
-            closure1![
-                [tp, env],
-                Rc::new(move |x| evalC(&tp, &[&[x.dup()], &env[..]].concat()))
-            ],
+            rc_closure![[tp, env], move |x| evalC(
+                &tp,
+                &[&[x.dup()], &env[..]].concat()
+            )],
         ),
         Free(x) => vfree(x.dup()),
         Bound(i) => env[*i as usize].dup(),
