@@ -2,10 +2,10 @@ use std::rc::Rc;
 
 type Int = i32;
 
-trait Boxed: Sized + Clone {
-    fn b(self: &Self) -> Box<Self> {
-        box self.clone()
-    }
+trait Dup: Sized + Clone {
+//    fn b(self: &Self) -> Box<Self> {
+ //       box self.clone()
+//    }
     fn dup(self: &Self) -> Self {
         self.clone()
     }
@@ -20,6 +20,7 @@ pub enum TermI {
     Pi(Box<TermC>, Box<TermC>),
     Bound(Int),
     Free(Box<Name>),
+    App(Box<TermI>, Box<TermC>),
     Nat,
     NatElim(Box<TermC>, Box<TermC>, Box<TermC>, Box<TermC>),
     Zero,
@@ -36,7 +37,7 @@ pub enum TermI {
         Box<TermC>,
     ),
 }
-impl Boxed for TermI {}
+impl Dup for TermI {}
 
 // ---------------------------------------------------------------------------
 
@@ -45,7 +46,7 @@ pub enum TermC {
     Inf(Box<TermI>),
     Lam(Box<TermC>),
 }
-impl Boxed for TermC {}
+impl Dup for TermC {}
 
 // ---------------------------------------------------------------------------
 
@@ -55,7 +56,7 @@ pub enum Name {
     Local(Int),
     Quote(Int),
 }
-impl Boxed for Name {}
+impl Dup for Name {}
 
 // ---------------------------------------------------------------------------
 
@@ -73,7 +74,7 @@ pub enum Value {
     VCons(Box<Value>, Box<Value>, Box<Value>, Box<Value>),
     VVec(Box<Value>, Box<Value>),
 }
-impl Boxed for Value {}
+impl Dup for Value {}
 
 impl std::fmt::Debug for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -108,7 +109,7 @@ pub enum Neutral {
         Box<Neutral>,
     ),
 }
-impl Boxed for Neutral {}
+impl Dup for Neutral {}
 
 // ---------------------------------------------------------------------------
 
@@ -120,3 +121,78 @@ fn vfree(n: Name) -> Value {
 
 type Env = Vec<Value>;
 type Context = Vec<(Name, Type)>;
+
+#[allow(non_snake_case)]
+pub fn evalI(trm: &TermI, env: &Env) -> Value {
+    use {TermI::*, Value::*};
+    match trm {
+        Ann(e, _) => evalC(e, env),
+        Star => VStar,
+        Pi(t, tp) => VPi(box evalC(t, env), {
+            let tp = tp.dup();
+            let env = env.clone();
+            Rc::new(move |x| evalC(&tp, &[&[x.dup()], &env[..]].concat()))
+        }),
+        Free(x) => vfree(x.dup()),
+        Bound(i) => env[*i as usize].dup(),
+        App(e,ep) => vapp(&evalI(e,env), &evalC(ep,env)),
+        Nat => VNat,
+        Zero => VZero,
+        Succ(k) => VSucc(box evalC(k,env)),
+        NatElim(m,mz,ms,box k) => {
+            let mzVal = evalC(mz,env);
+            let msVal = evalC(ms,env);
+            struct Fix<'a>{ f: &'a dyn Fn(&Fix, &Value) -> Value }
+            let rec = Fix{f : &|rec,kVal| {
+             match kVal {
+                VZero => mzVal.dup(),
+                VSucc(box ref l) => vapp(&vapp(&msVal,l), &(rec.f)(rec, l)),
+                _ => unreachable!(format!("internal: eval natElim {:?}", kVal))
+            }}};
+            (rec.f)(&rec, &evalC(k,env))
+            /*
+            fn rec(kVal: &Value, s: &S) -> Value {
+                let S(mzVal, msVal) = s;
+                match kVal {
+                    VZero => mzVal.dup(),
+                    VSucc(box ref l) => vapp(&vapp(&msVal,l), &rec(l, s)),
+                    _ => unreachable!(format!("internal: eval natElim {:?}", kVal))
+                }
+            }
+            rec(&evalC(k,env), &S(mzVal, msVal))
+            */
+            /*
+            let rec = |kVal| match kVal {
+                VZero => mzVal,
+                VSucc(box ref l) => vapp(&vapp(&msVal,l), &rec(l)),
+                _ => unreachable!(format!("internal: eval natElim {:?}", kVal))
+            };
+            rec(evalC(k,env))
+            */
+        },
+        _ => unreachable!(),
+    }
+}
+
+fn evalC(trm: &TermC, env: &Env) -> Value {
+    use {TermC::*, Value::*};
+    match trm {
+        Inf(i) => evalI(i, env),
+        Lam(e) => {
+            let env = env.clone();
+            let e = e.dup();
+            VLam(Rc::new(move |x| {
+                evalC(&e, &[&[x.dup()], &env[..]].concat())
+            }))
+        }
+    }
+}
+
+fn vapp(val : &Value, v : &Value) -> Value {
+    use {Value::*, Neutral::*};
+    match val {
+        VLam(f) => f(v),
+        VNeutral(n) => VNeutral(box NApp(box n.dup(),box v.dup())),
+        _ => unreachable!()
+    }
+}
