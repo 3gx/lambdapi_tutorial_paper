@@ -1,3 +1,4 @@
+#![feature(box_patterns, box_syntax)]
 fn main() {
     println!("answer= {}", lampi::stlc::test());
     println!("Hello, world!");
@@ -53,5 +54,17 @@ fn main() {
     println!("count= {}", Rc::strong_count(&c.0));
     println!("count= {:?} {:?} {:?}", a, b, c);
 
-    {}
+    {
+        use lampi::stlc::{TermC::*, TermI::*, Type::*, Name::*, Boxed};
+        let id1 = Lam(Inf(Bound(0).b()).b());
+        let const1 = Lam(Lam(Inf(Bound(1).b()).b()).b());
+        let tfree = |a : &str| TFree(Global(a.to_string()).b()).b();
+        let free = |x : &str| Inf(Free(Global(x.to_string()).b()).b()).b();
+        let term1 = App(Ann(id1.b(), Fun(tfree("a"), tfree("a")).b()).b(), free("y")).b();
+        let term2 = App(App(Ann(const1.b(), Fun(Fun(tfree("b"), tfree("b")).b(),
+                   Fun(tfree("a"),
+                        Fun(tfree("b"),tfree("b")).b()).b()).b()).b(), id1.b()).b(), free("y")).b();
+        println!("term1= {:?}",term1);
+        println!("term2= {:?}",term2);
+    }
 }

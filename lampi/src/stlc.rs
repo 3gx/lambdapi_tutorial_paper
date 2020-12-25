@@ -15,7 +15,7 @@ enum TermI {
 };
  */
 
-trait Boxed: Sized + Clone {
+pub trait Boxed: Sized + Clone {
     fn b(self: &Self) -> Box<Self> {
         box self.clone()
     }
@@ -85,14 +85,14 @@ fn vfree(n: Name) -> Value {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-enum Kind {
+pub enum Kind {
     Star,
 }
 
 // ---------------------------------------------------------------------------
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-enum Info {
+pub enum Info {
     HasKind(Box<Kind>),
     HasType(Box<Type>),
 }
@@ -168,12 +168,12 @@ fn kindC(ctx: &Ctx, t: &Type, k: &Kind) -> Result<()> {
 }
 
 #[allow(non_snake_case)]
-fn typeI0(c: &Ctx, term: &TermI) -> Result<Type> {
+pub fn typeI0(c: &Ctx, term: &TermI) -> Result<Type> {
     typeI(0, c, term)
 }
 
 #[allow(non_snake_case)]
-fn typeI(i: Int, c: &Ctx, trm: &TermI) -> Result<Type> {
+pub fn typeI(i: Int, c: &Ctx, trm: &TermI) -> Result<Type> {
     match trm {
         TermI::Ann(e, t) => {
             kindC(c, &t, &Kind::Star)?;
@@ -205,7 +205,7 @@ fn typeI(i: Int, c: &Ctx, trm: &TermI) -> Result<Type> {
 }
 
 #[allow(non_snake_case)]
-fn typeC(i: Int, c: &Ctx, term: &TermC, typ: &Type) -> Result<()> {
+pub fn typeC(i: Int, c: &Ctx, term: &TermC, typ: &Type) -> Result<()> {
     match (term, typ) {
         (TermC::Inf(e), _) => {
             let tp = &typeI(i, c, e)?;
@@ -248,7 +248,7 @@ fn substC(i: Int, r: &TermI, t: &TermC) -> TermC {
     }
 }
 
-fn quote0(v: &Value) -> TermC {
+pub fn quote0(v: &Value) -> TermC {
     quote(0, v)
 }
 
@@ -273,3 +273,4 @@ fn boundfree(i: Int, n: &Name) -> TermI {
         _ => TermI::Free(n.b()),
     }
 }
+
