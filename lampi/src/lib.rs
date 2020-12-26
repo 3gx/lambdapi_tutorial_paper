@@ -36,19 +36,19 @@ macro_rules! rc_closure {
 
 #[macro_export]
 macro_rules! rc_closure {
-    ({}, |$var:ident| $body:expr) => {
+    ({}, |$var:tt| $body:expr) => {
         Rc::new(move |$var| $body)
     };
-    ({}, |$var:tt, $($vars:ident)*| $body:expr) => {
+    ({}, |$var:tt, $($vars:tt),*| $body:expr) => {
         Rc::new(move |$var, $($vars)*| $body)
     };
-    ({$($tt:tt)*}, |$var:ident| $body:expr) => {
+    ({$($tt:tt)*}, |$var:tt| $body:expr) => {
         {
         clone_vars!($($tt)*);
         Rc::new(move |$var| $body)
         }
     };
-    ({$($tt:tt)*}, |$var:ident, $($vars:ident)*| $body:expr) => {
+    ({$($tt:tt)*}, |$var:tt, $($vars:tt)*| $body:expr) => {
         {
         clone_vars!($($tt)*);
         Rc::new(move |$var, $($vars)*| $body)
