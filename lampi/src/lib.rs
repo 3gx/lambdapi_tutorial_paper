@@ -30,15 +30,25 @@ macro_rules! rclam {
         Rc::new(move |$($vars),*| $body)
     };
     */
+    (@clone_vars) => {};
+    (@clone_vars $i:ident) => {
+        let $i = $i.clone();
+    };
+    (@clone_vars $i:ident, $($tt:tt)*) => {
+        rclam!(@clone_vars $i);
+        rclam!(@clone_vars $($tt)*);
+    };
     ({$($captures:tt),*}, || $body:expr) => {
         {
-        clone_vars!($($captures),*);
+        rclam!(@clone_vars $($captures),*);
+//        clone_vars!($($captures),*);
         Rc::new(move || $body)
         }
     };
     ({$($captures:tt),*}, |$($vars:tt),*| $body:expr) => {
         {
-        clone_vars!($($captures),*);
+        //clone_vars!($($captures),*);
+        rclam!(@clone_vars $($captures),*);
         Rc::new(move |$($vars),*| $body)
         }
     };

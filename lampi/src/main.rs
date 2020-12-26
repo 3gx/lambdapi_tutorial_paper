@@ -125,7 +125,7 @@ fn main() {
         println!("");
         println!("-=- DTLC -=-");
         use lampi::dtlc::*;
-        use lampi::{clone_vars, rclam};
+        use lampi::{rclam};
         use {Name::*, TermC::*, TermI::*, Value::*};
 
         let v0 = VLam(rclam![{}, |x| VLam(rclam![{ x }, |_| x.dup()])]);
