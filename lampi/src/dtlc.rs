@@ -430,25 +430,23 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                 mc,
                 &VPi(
                     VNat.b(),
-                    rc_closure!([aVal, mVal], move |l| {
-                        VPi(
-                            aVal.b(),
-                            rc_closure![[l, aVal, mVal], move |y| VPi(
-                                VVec(aVal.b(), l.b()).b(),
-                                rc_closure![[l, y, aVal, mVal], move |ys| VPi(
-                                    [l.dup(), ys.dup()]
+                    rc_closure!([aVal, mVal], move |l| VPi(
+                        aVal.b(),
+                        rc_closure![[l, aVal, mVal], move |y| VPi(
+                            VVec(aVal.b(), l.b()).b(),
+                            rc_closure![[l, y, aVal, mVal], move |ys| VPi(
+                                [l.dup(), ys.dup()]
+                                    .iter()
+                                    .fold(mVal.dup(), |a, b| vapp(&a, &b))
+                                    .b(),
+                                rc_closure![[l, y, ys, aVal, mVal], move |_| {
+                                    [VSucc(l.b()), VCons(aVal.b(), l.b(), y.b(), ys.b())]
                                         .iter()
                                         .fold(mVal.dup(), |a, b| vapp(&a, &b))
-                                        .b(),
-                                    rc_closure![[l, y, ys, aVal, mVal], move |_| {
-                                        [VSucc(l.b()), VCons(aVal.b(), l.b(), y.b(), ys.b())]
-                                            .iter()
-                                            .fold(mVal.dup(), |a, b| vapp(&a, &b))
-                                    }],
-                                )]
-                            )],
-                        )
-                    }),
+                                }],
+                            )]
+                        )],
+                    )),
                 ),
             )?;
             typeC(i, ctx, k, &VNat)?;
