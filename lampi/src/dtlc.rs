@@ -209,7 +209,7 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
         Star => VStar,
         Pi(t, tp) => VPi(
             box evalC(t, env),
-            rc_closure![{tp, env}, |x| evalC(
+            rclam![{tp, env}, |x| evalC(
                 &tp,
                 &[&[x.dup()], &env[..]].concat()
             )],
@@ -392,9 +392,9 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                 m,
                 &VPi(
                     VNat.b(),
-                    rc_closure![{ aVal }, |k| VPi(
+                    rclam![{ aVal }, |k| VPi(
                         VVec(aVal.b(), k.b()).b(),
-                        rc_closure!({}, |_| VStar),
+                        rclam!({}, |_| VStar),
                     )],
                 ),
             )?;
@@ -413,16 +413,16 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                 mc,
                 &VPi(
                     VNat.b(),
-                    rc_closure![{aVal, mVal}, |l| VPi(
+                    rclam![{aVal, mVal}, |l| VPi(
                         aVal.b(),
-                        rc_closure![{l, aVal, mVal}, |y| VPi(
+                        rclam![{l, aVal, mVal}, |y| VPi(
                             VVec(aVal.b(), l.b()).b(),
-                            rc_closure![{l, y, aVal, mVal}, |ys| VPi(
+                            rclam![{l, y, aVal, mVal}, |ys| VPi(
                                 [l.dup(), ys.dup()]
                                     .iter()
                                     .fold(mVal.dup(), |a, b| vapp(&a, &b))
                                     .b(),
-                                rc_closure![{l, y, ys, aVal, mVal}, |_| {
+                                rclam![{l, y, ys, aVal, mVal}, |_| {
                                     [VSucc(l.b()), VCons(aVal.b(), l.b(), y.b(), ys.b())]
                                         .iter()
                                         .fold(mVal.dup(), |a, b| vapp(&a, &b))

@@ -19,20 +19,27 @@ macro_rules! clone_vars {
     };
     */
 }
-/*
 #[macro_export]
-macro_rules! rc_closure {
-    ({}, $closure:expr) => {
-        Rc::new($closure)
+macro_rules! rclam {
+    ({}, || $body:expr) => {
+        Rc::new(move || $body)
     };
-    ({$($tt:tt)*}, $closure:expr) => {
+    ({}, |$($vars:tt),*| $body:expr) => {
+        Rc::new(move |$($vars),*| $body)
+    };
+    ({$($captures:tt),*}, || $body:expr) => {
         {
-        clone_vars!($($tt)*);
-        Rc::new($closure)
+        clone_vars!($($captures),*);
+        Rc::new(move || $body)
+        }
+    };
+    ({$($captures:tt),*}, |$($vars:tt),*| $body:expr) => {
+        {
+        clone_vars!($($captures),*);
+        Rc::new(move |$($vars),*| $body)
         }
     };
 }
-*/
 
 #[macro_export]
 macro_rules! rc_closure {
