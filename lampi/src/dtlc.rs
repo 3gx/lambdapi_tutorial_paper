@@ -1,23 +1,5 @@
 use std::rc::Rc;
-
-macro_rules! clone {
-    ($i:ident) => {
-        let $i = $i.clone();
-    };
-    ($i:ident, $($tt:tt)*) => {
-        clone!($i);
-        clone!($($tt)*);
-    };
-    /*
-    ($this:ident . $i:ident) => {
-        let $i = $this.$i.clone();
-    };
-    ($this:ident . $i:ident, $($tt:tt)*) => {
-        clone!($this . $i);
-        clone!($($tt)*);
-    };
-    */
-}
+//#[macro_use]
 
 /*
 macro_rules! closure {
@@ -29,15 +11,12 @@ macro_rules! closure {
     };
 }
 */
-macro_rules! rc_closure {
-    ([$($tt:tt)*], $closure:expr) => {
-        {
-        clone!($($tt)*);
-        Rc::new($closure)
-        }
-    };
-}
+
+/*
 macro_rules! rc_closure1 {
+    ([], $closure:expr) => {
+        Rc::new($closure)
+    };
     ([$($tt:tt)*], $closure:expr) => {
         {
         clone!($($tt)*);
@@ -45,6 +24,8 @@ macro_rules! rc_closure1 {
         }
     };
 }
+*/
+/*
 macro_rules! closure1 {
     ([$($tt:tt)*], $closure:expr) => {
         {
@@ -53,6 +34,7 @@ macro_rules! closure1 {
         }
     };
 }
+*/
 
 type Int = i32;
 
@@ -224,7 +206,7 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
         Star => VStar,
         Pi(t, tp) => VPi(
             box evalC(t, env),
-            rc_closure1![[tp, env], move |x| evalC(
+            rc_closure![{tp, env}, move |x| evalC(
                 &tp,
                 &[&[x.dup()], &env[..]].concat()
             )],
@@ -430,23 +412,23 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                 mc,
                 &VPi(
                     VNat.b(),
-                    rc_closure!([aVal, mVal], move |l| VPi(
+                    rc_closure![{aVal, mVal}, move |l| VPi(
                         aVal.b(),
-                        rc_closure![[l, aVal, mVal], move |y| VPi(
+                        rc_closure![{l, aVal, mVal}, move |y| VPi(
                             VVec(aVal.b(), l.b()).b(),
-                            rc_closure![[l, y, aVal, mVal], move |ys| VPi(
+                            rc_closure![{l, y, aVal, mVal}, move |ys| VPi(
                                 [l.dup(), ys.dup()]
                                     .iter()
                                     .fold(mVal.dup(), |a, b| vapp(&a, &b))
                                     .b(),
-                                rc_closure![[l, y, ys, aVal, mVal], move |_| {
+                                rc_closure![{l, y, ys, aVal, mVal}, move |_| {
                                     [VSucc(l.b()), VCons(aVal.b(), l.b(), y.b(), ys.b())]
                                         .iter()
                                         .fold(mVal.dup(), |a, b| vapp(&a, &b))
                                 }],
                             )]
                         )],
-                    )),
+                    )],
                 ),
             )?;
             typeC(i, ctx, k, &VNat)?;

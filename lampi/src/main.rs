@@ -125,14 +125,12 @@ fn main() {
         println!("");
         println!("-=- DTLC -=-");
         use lampi::dtlc::*;
+        use lampi::{clone, rc_closure};
         use {Name::*, TermC::*, TermI::*, Value::*};
 
-        let v0 = VLam(Rc::new(|x| {
-            VLam({
-                let x = x.dup();
-                Rc::new(move |_| x.dup())
-            })
-        }));
+        let v0 = VLam(rc_closure![{}, |x| VLam(
+            rc_closure![{ x }, move |_| x.dup()]
+        )]);
         println!("v0={:?}", v0);
         let e0 = quote0(&v0);
         println!("e0={:?}", e0);
