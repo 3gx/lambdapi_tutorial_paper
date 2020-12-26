@@ -12,6 +12,7 @@ macro_rules! closure {
 }
 */
 
+/*
 macro_rules! rc_closure1 {
     ({$($tt:tt)*}, |$var:ident| $body:expr) => {
         {
@@ -26,6 +27,7 @@ macro_rules! rc_closure1 {
         }
     };
 }
+*/
 /*
 macro_rules! closure1 {
     ([$($tt:tt)*], $closure:expr) => {
@@ -201,15 +203,13 @@ fn lookup<'a, 'b>(c: &'a Context, n: &'b Name) -> Option<&'a Type> {
 
 #[allow(non_snake_case)]
 pub fn evalI(trm: &TermI, env: &Env) -> Value {
-    let c = rc_closure!({}, |x: i32, y: i32| x + y);
-    println!("{}", c(2, 3));
     use {Neutral::*, TermI::*, Value::*};
     match trm {
         Ann(e, _) => evalC(e, env),
         Star => VStar,
         Pi(t, tp) => VPi(
             box evalC(t, env),
-            rc_closure1![{tp, env}, |x| evalC(
+            rc_closure![{tp, env}, |x| evalC(
                 &tp,
                 &[&[x.dup()], &env[..]].concat()
             )],
@@ -415,16 +415,16 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                 mc,
                 &VPi(
                     VNat.b(),
-                    rc_closure![{aVal, mVal}, move |l| VPi(
+                    rc_closure![{aVal, mVal}, |l| VPi(
                         aVal.b(),
-                        rc_closure![{l, aVal, mVal}, move |y| VPi(
+                        rc_closure![{l, aVal, mVal}, |y| VPi(
                             VVec(aVal.b(), l.b()).b(),
-                            rc_closure![{l, y, aVal, mVal}, move |ys| VPi(
+                            rc_closure![{l, y, aVal, mVal}, |ys| VPi(
                                 [l.dup(), ys.dup()]
                                     .iter()
                                     .fold(mVal.dup(), |a, b| vapp(&a, &b))
                                     .b(),
-                                rc_closure![{l, y, ys, aVal, mVal}, move |_| {
+                                rc_closure![{l, y, ys, aVal, mVal}, |_| {
                                     [VSucc(l.b()), VCons(aVal.b(), l.b(), y.b(), ys.b())]
                                         .iter()
                                         .fold(mVal.dup(), |a, b| vapp(&a, &b))

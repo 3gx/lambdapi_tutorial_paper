@@ -19,6 +19,7 @@ macro_rules! clone_vars {
     };
     */
 }
+/*
 #[macro_export]
 macro_rules! rc_closure {
     ({}, $closure:expr) => {
@@ -28,6 +29,47 @@ macro_rules! rc_closure {
         {
         clone_vars!($($tt)*);
         Rc::new($closure)
+        }
+    };
+}
+*/
+
+#[macro_export]
+macro_rules! rc_closure {
+    ({}, |$var:ident| $body:expr) => {
+        Rc::new(move |$var| $body)
+    };
+    ({}, |$var:tt, $($vars:ident)*| $body:expr) => {
+        Rc::new(move |$var, $($vars)*| $body)
+    };
+    ({$($tt:tt)*}, |$var:ident| $body:expr) => {
+        {
+        clone_vars!($($tt)*);
+        Rc::new(move |$var| $body)
+        }
+    };
+    ({$($tt:tt)*}, |$var:ident, $($vars:ident)*| $body:expr) => {
+        {
+        clone_vars!($($tt)*);
+        Rc::new(move |$var, $($vars)*| $body)
+        }
+    };
+    ({}, |$var:tt| $body:expr) => {
+        Rc::new(move |$var| $body)
+    };
+    ({}, |$var:tt, $($vars:tt)*| $body:expr) => {
+        Rc::new(move |$var, $($vars)*| $body)
+    };
+    ({$($tt:tt)*}, |$var:tt| $body:expr) => {
+        {
+        clone_vars!($($tt)*);
+        Rc::new(move |$var| $body)
+        }
+    };
+    ({$($tt:tt)*}, |$var:tt, $($vars:tt)*| $body:expr) => {
+        {
+        clone_vars!($($tt)*);
+        Rc::new(move |$var, $($vars)*| $body)
         }
     };
 }
