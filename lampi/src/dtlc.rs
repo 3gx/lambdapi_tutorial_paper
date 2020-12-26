@@ -13,10 +13,16 @@ macro_rules! closure {
 */
 
 macro_rules! rc_closure1 {
-    ({$($tt:tt)*}, $closure:expr) => {
+    ({$($tt:tt)*}, |$var:ident| $body:expr) => {
         {
         clone_vars!($($tt)*);
-        Rc::new($closure)
+        Rc::new(move |$var| $body)
+        }
+    };
+    ({$($tt:tt)*}, |$var:ident, $($vars:ident)*| $body:expr) => {
+        {
+        clone_vars!($($tt)*);
+        Rc::new(move |$var, $($vars)*| $body)
         }
     };
 }
@@ -195,13 +201,15 @@ fn lookup<'a, 'b>(c: &'a Context, n: &'b Name) -> Option<&'a Type> {
 
 #[allow(non_snake_case)]
 pub fn evalI(trm: &TermI, env: &Env) -> Value {
+    let c = rc_closure!({}, |x: i32, y: i32| x + y);
+    println!("{}", c(2, 3));
     use {Neutral::*, TermI::*, Value::*};
     match trm {
         Ann(e, _) => evalC(e, env),
         Star => VStar,
         Pi(t, tp) => VPi(
             box evalC(t, env),
-            rc_closure1![{tp, env}, move |x| evalC(
+            rc_closure1![{tp, env}, |x| evalC(
                 &tp,
                 &[&[x.dup()], &env[..]].concat()
             )],
