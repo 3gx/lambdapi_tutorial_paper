@@ -41,7 +41,7 @@ macro_rules! rc_closure1 {
     ([$($tt:tt)*], $closure:expr) => {
         {
         clone!($($tt)*);
-        Rc::new(move $closure)
+        Rc::new($closure)
         }
     };
 }
@@ -224,7 +224,7 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
         Star => VStar,
         Pi(t, tp) => VPi(
             box evalC(t, env),
-            rc_closure![[tp, env], move |x| evalC(
+            rc_closure1![[tp, env], move |x| evalC(
                 &tp,
                 &[&[x.dup()], &env[..]].concat()
             )],
