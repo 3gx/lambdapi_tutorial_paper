@@ -128,15 +128,13 @@ fn main() {
         use lampi::{clone_vars, rc_closure};
         use {Name::*, TermC::*, TermI::*, Value::*};
 
-        let v0 = VLam(rc_closure![{}, |x| VLam(
-            rc_closure![{ x }, |_| x.dup()]
-        )]);
+        let v0 = VLam(rc_closure![{}, |x| VLam(rc_closure![{ x }, |_| x.dup()])]);
         println!("v0={:?}", v0);
         let e0 = quote0(&v0);
         println!("e0={:?}", e0);
 
-        let c = rc_closure!({}, |x,y| x+y);
-        println!("{}", c(2,3));
+        let c = rc_closure!({}, |x, y| x + y);
+        println!("{}", c(2, 3));
 
         /*
         id_ = Lam(Inf(Bound(0)))

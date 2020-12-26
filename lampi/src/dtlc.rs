@@ -390,15 +390,13 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                 i,
                 ctx,
                 m,
-                &VPi(box VNat, {
-                    let aVal = aVal.dup();
-                    Rc::new(move |k| {
-                        VPi(
-                            box VVec(aVal.b(), k.b()), //
-                            Rc::new(|_| VStar),
-                        )
-                    })
-                }),
+                &VPi(
+                    VNat.b(),
+                    rc_closure![{ aVal }, |k| VPi(
+                        VVec(aVal.b(), k.b()).b(),
+                        rc_closure!({}, |_| VStar),
+                    )],
+                ),
             )?;
             let mVal = evalC(m, &Env::new());
             typeC(
