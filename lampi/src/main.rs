@@ -125,7 +125,7 @@ fn main() {
         println!("");
         println!("-=- DTLC -=-");
         use lampi::dtlc::*;
-        use lampi::{clone, rc_closure};
+        use lampi::{clone_vars, rc_closure};
         use {Name::*, TermC::*, TermI::*, Value::*};
 
         let v0 = VLam(rc_closure![{}, |x| VLam(
@@ -162,6 +162,7 @@ fn main() {
         print("type(term2)=", typeI0(env2, term2))
                  */
     }
+
     {
         use std::rc::Rc;
         fn closure_user(closure: Box<dyn Fn(usize) -> bool>) -> bool {

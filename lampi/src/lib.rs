@@ -1,13 +1,13 @@
 #![feature(box_patterns, box_syntax)]
 
 #[macro_export]
-macro_rules! clone {
+macro_rules! clone_vars {
     ($i:ident) => {
         let $i = $i.clone();
     };
     ($i:ident, $($tt:tt)*) => {
-        clone!($i);
-        clone!($($tt)*);
+        clone_vars!($i);
+        clone_vars!($($tt)*);
     };
     /*
     ($this:ident . $i:ident) => {
@@ -26,7 +26,7 @@ macro_rules! rc_closure {
     };
     ({$($tt:tt)*}, $closure:expr) => {
         {
-        clone!($($tt)*);
+        clone_vars!($($tt)*);
         Rc::new($closure)
         }
     };
