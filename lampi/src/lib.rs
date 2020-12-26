@@ -2,6 +2,7 @@
 
 #[macro_export]
 macro_rules! clone_vars {
+    () => {};
     ($i:ident) => {
         let $i = $i.clone();
     };
@@ -21,12 +22,14 @@ macro_rules! clone_vars {
 }
 #[macro_export]
 macro_rules! rclam {
+    /*
     ({}, || $body:expr) => {
         Rc::new(move || $body)
     };
     ({}, |$($vars:tt),*| $body:expr) => {
         Rc::new(move |$($vars),*| $body)
     };
+    */
     ({$($captures:tt),*}, || $body:expr) => {
         {
         clone_vars!($($captures),*);
