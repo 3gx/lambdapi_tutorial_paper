@@ -233,15 +233,15 @@ fn main() {
             box VPi(box VNat, rclam![{}, |_| VStar]),
             rclam![{}, |m| VPi(
                 box vapp(&m, &VZero),
-                rclam![{m}, |_| VPi(
+                rclam![{ m }, |_| VPi(
                     box VPi(
                         box VNat,
-                        rclam![{m}, |k| VPi(
+                        rclam![{ m }, |k| VPi(
                             box vapp(&m, &k),
                             rclam![{m,k}, |_| vapp(&m, &VSucc(k.b()))]
                         )]
                     ),
-                    rclam![{m}, |_| VPi(box VNat, rclam![{m}, |n| vapp(&m, &n)])],
+                    rclam![{ m }, |_| VPi(box VNat, rclam![{ m }, |n| vapp(&m, &n)])],
                 )],
             )],
         );
