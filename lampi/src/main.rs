@@ -249,60 +249,59 @@ fn main() {
         println!("nat_elim= {:?}", nat_elim);
         println!("type(nat_elim)= {:?}", typeI0(&Context::new(), &nat_elim));
 
-        /*
-        ## > let plus = natElim (\_ -> Nat -> Nat)
-        ##                      (\n -> n)
-        ##                      (\k rec n -> Succ (rec n))
-        ## plus :: Pi (x :: Nat) (y :: Nat) . Nat
-
-        plusl: TLam[[TermC], TermI] = lambda x: NatElim(
-            Lam(pi(Inf(Nat()), Inf(Nat()))),
-            Lam(Inf(Bound(0))),
-            Lam(Lam(Lam(Inf(Succ(Inf(App(Bound(1), Inf(Bound(0))))))))),
-            x,
-        )
-
-        natElimL = Lam(
-            Lam(
-                Lam(
-                    Lam(
-                        Inf(NatElim(Inf(Bound(3)), Inf(Bound(2)), Inf(Bound(1)), Inf(Bound(0))))
-                    )
-                )
-            )
-        )
-        natElimTy = VPi(
-            VPi(VNat(), lambda _: VStar()),
-            lambda m: VPi(
-                vapp(m, VZero()),
-                lambda _: VPi(
-                    VPi(VNat(), lambda k: VPi(vapp(m, k), lambda _: vapp(m, VSucc(k)))),
-                    lambda _: VPi(VNat(), lambda n: vapp(m, n)),
+        let plus = App(
+            box App(
+                box App(
+                    nat_elim.b(),
+                    box Lam(box pi(box Inf(box Nat), box Inf(box Nat))),
                 ),
+                box Lam(box Inf(box Bound(0))),
             ),
-        )
+            box Lam(box Lam(box Lam(box Inf(box Succ(box Inf(box App(
+                box Bound(1),
+                box Inf(box Bound(0)),
+            ))))))),
+        );
+        let vnat_elim = evalI(&nat_elim, &Env::new());
+        let vplus = vapply(
+            &vnat_elim,
+            &vec![
+                VLam(rclam![{}, |_| VPi(box VNat, rclam![{}, |_| VNat])]),
+                VLam(rclam![{}, move |n| n.dup()]),
+                VLam(rclam![{}, |_| VLam(rclam![{}, |rec| VLam(rclam![
+                    { rec },
+                    |n| VSucc(box vapp(&rec, &n))
+                ])])]),
+            ],
+        );
+        println!("vplus={:?}", vplus);
 
-        natElim = Ann(natElimL, quote0(natElimTy))
-        print("natElim=", natElim)
-        print("type(natElim)=", typeI0({}, natElim))
-        Plus = App(
-            App(App(natElim, Lam(pi(Inf(Nat()), Inf(Nat())))), Lam(Inf(Bound(0)))),
-            Lam(Lam(Lam(Inf(Succ(Inf(App(Bound(1), Inf(Bound(0))))))))),
-        )
-        VnatElim = evalI(natElim, [])
-        vplus = vapply(VnatElim, [\
-                VLam(lambda _: VPi(VNat(), lambda _ : VNat())),
-                VLam(lambda n : n),
-                VLam(lambda p: VLam(lambda rec: VLam(lambda n : VSucc(vapp(rec, n)))))])
-        print("vplus=", vplus)
-        #Plus2 : TermI
-        #plus2env : Context
-        #plus2env = {Global("VnatElim"): natElimTy}
-        #Plus2, _ = (quote0(vplus) >> Inf).e >> App
-        #print("plus2env=", plus2env)
-        #print("Plus2=",Plus2)
-        #print("type(Plus2)=", typeI0(plus2env, Plus2))
-                 */
+        let plus2env = Context::from(vec![(Global("VnatElim".to_string()), nat_elim_ty.dup())]);
+        println!("plus2env= {:?}", plus2env);
+        /*
+        if let Lam(box Inf(box App(plus2, _))) = quote0(&vplus) {
+            println!("plus2= {:?}",plus2);
+            println!("type(plus2)= {:?}", typeI0(&plus2env, &plus2));
+        } else {
+           panic!("unhandled {:?}", vplus);
+        }
+        */
+
+        let Plus1 = Ann(
+            box Lam(box Inf(box NatElim(
+                box Lam(box pi(box Inf(box Nat), box Inf(box Nat))),
+                box Lam(box Inf(box Bound(0))),
+                box Lam(box Lam(box Lam(box Inf(box Succ(box Inf(box App(
+                    box Bound(1),
+                    box Inf(box Bound(0)),
+                ))))))),
+                box Inf(box Bound(0)),
+            ))),
+            box pi(box Inf(box Nat), box pi(box Inf(box Nat), box Inf(box Nat))),
+        );
+        println!("type(Plus)= {:?}", typeI0(&Context::new(), &plus));
+        /*
+         */
     }
 
     {

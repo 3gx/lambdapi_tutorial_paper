@@ -536,11 +536,24 @@ fn substI(i: Int, r: &TermI, ti: &TermI) -> TermI {
 
 #[allow(non_snake_case)]
 fn neutralQuote(i: Int, n: &Neutral) -> TermI {
-    use {Neutral::*, TermI::*};
+    use {Neutral::*, TermC::*, TermI::*};
     match n {
         NFree(x) => boundfree(i, x),
         NApp(n, v) => App(box neutralQuote(i, n), box quote(i, v)),
-        _ => panic!("unhandled case {:?}", n),
+        NNatElim(a, n, x, xs) => NatElim(
+            quote(i, a).b(),
+            quote(i, n).b(),
+            quote(i, x).b(),
+            Inf(neutralQuote(i, xs).b()).b(),
+        ),
+        NVecElim(a, m, mn, mc, n, xs) => VecElim(
+            quote(i, a).b(),
+            quote(i, m).b(),
+            quote(i, mn).b(),
+            quote(i, mc).b(),
+            quote(i, n).b(),
+            Inf(neutralQuote(i, xs).b()).b(),
+        ),
     }
 }
 
