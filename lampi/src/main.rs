@@ -1,4 +1,5 @@
 #![feature(box_patterns, box_syntax)]
+#![allow(non_snake_case)]
 
 macro_rules! clone_all {
     ($i:ident) => {
@@ -165,6 +166,7 @@ fn main() {
             (Global("a".to_string()), VStar),
         ]);
         let env2 = Context::from([&[(Global("b".to_string()), VStar)], &env1[..]].concat());
+        println!("\n-------------------");
         println!("eval(term1)= {:?}", evalI(&term1, &Env::new()));
         println!("qeval(term1)= {:?}", quote0(&evalI(&term1, &Env::new())));
         println!("qqeval(term2)= {:?}", quote0(&evalI(&term2, &Env::new())));
@@ -181,6 +183,7 @@ fn main() {
                 box pi(box Inf(box Bound(0)), box Inf(box Bound(1))),
             ),
         );
+        println!("\n-------------------");
         println!("e35= {:?}", e35);
 
         macro_rules! bx {
@@ -246,10 +249,11 @@ fn main() {
             )],
         );
         let nat_elim = Ann(nat_elim_l.b(), quote0(&nat_elim_ty).b());
+        println!("\n-------------------");
         println!("nat_elim= {:?}", nat_elim);
         println!("type(nat_elim)= {:?}", typeI0(&Context::new(), &nat_elim));
 
-        let plus = App(
+        let cplus = App(
             box App(
                 box App(
                     nat_elim.b(),
@@ -299,8 +303,9 @@ fn main() {
             ))),
             box pi(box Inf(box Nat), box pi(box Inf(box Nat), box Inf(box Nat))),
         );
+        println!("\n-------------------");
         println!("type(plus1)= {:?}", typeI0(&Context::new(), &plus1));
-        println!("type(Plus)= {:?}", typeI0(&Context::new(), &plus));
+        println!("type(Plus)= {:?}", typeI0(&Context::new(), &cplus));
 
         fn int2nat(n: Int) -> TermC {
             if n == 0 {
@@ -320,6 +325,7 @@ fn main() {
         // > plus 40 2
         //# 42 :: Nat
         let n40 = int2nat(40);
+        println!("\n-------------------");
         println!("n40= {:?}", n40);
         let n2 = int2nat(2);
         println!("n2= {:?}", n2);
@@ -343,6 +349,7 @@ fn main() {
         let n1 = int2nat(1);
         let n2a = App(plusl(&n1).b(), n1.b());
 
+        println!("\n-------------------");
         println!("n2a= {:?}", n2a);
         println!("type(n2a)= {:?}", typeI0(&Context::new(), &n2a));
         let n2e = evalI(&n2a, &Env::new());
@@ -352,11 +359,292 @@ fn main() {
         println!("n4= {:?}", n4);
         println!("type(n4)= {:?}", typeI0(&Context::new(), &n4));
         println!("eval(n4)= {:?}", nval2int(&evalI(&n4, &Env::new())));
+
+        // example from 4.2
+        // ##################
+        // > let append =
+        // >   (\a -> vecElim a
+        //                    (\m _ -> Pi (n :: Nat) . Vec a n -> Vec a (plus m n))
+        //                    (\_ v -> v)
+        //                    (\m v vs rec n w -> Cons a (plus m n) v (rec n w)))
+        //        :: Pi (a :: *) (m :: Nat) (v :: Vec a m) (n :: Nat) (w :: Vec a n) .
+        //           Vec a (plus m n)
+
+        // > assume (a :: *) (x :: a) (y :: a)
+        // > append a 2 (Cons a 1 x (Cons a 0 x (Nil a)))
+        //            1 (Cons a 0 y (Nil a))
+        // Cons a 2 x (Cons a 1 x (Cons a 0 y (Nil a))) :: Vec a 3
+
+        let plus =
+            |x: &TermC, y: &TermC| -> TermC { Inf(box App(box App(cplus.b(), x.b()), y.b())) };
+
+        let bound = |i: Int| -> TermC { Inf(box Bound(i)) };
+
+        let vec = |a: &TermC, n: &TermC| -> TermC { Inf(box Vec(a.b(), n.b())) };
+        let vec_elim_l = Lam(box Lam(box Lam(box Lam(box Lam(box Lam(box Inf(
+            box VecElim(
+                box Inf(box Bound(5)),
+                box Inf(box Bound(4)),
+                box Inf(box Bound(3)),
+                box Inf(box Bound(2)),
+                box Inf(box Bound(1)),
+                box Inf(box Bound(0)),
+            ),
+        )))))));
+
+        let vec_elim_ty = VPi(
+            box VStar,
+            rclam![{}, |a| VPi(
+                box VPi(
+                    box VNat,
+                    rclam![{ a }, |n| VPi(
+                        box VVec(a.b(), n.b()),
+                        rclam![{}, |_| VStar]
+                    )]
+                ),
+                rclam![{ a }, |m| VPi(
+                    box vapp(&vapp(&m, &VZero), &VNil(a.b())),
+                    rclam![{m,a}, |_| VPi(
+                        box VPi(
+                            box VNat,
+                            rclam![{m,a}, |n| VPi(
+                                a.b(),
+                                rclam![{m,n,a}, |x| VPi(
+                                    box VVec(a.b(), n.b()),
+                                    rclam![{m,n,a,x}, |xs| VPi(
+                                        box vapp(&vapp(&m, &n), &xs),
+                                        rclam![{m,n,a,x,xs}, |_| vapp(
+                                            &vapp(&m, &VSucc(n.b())),
+                                            &VCons(a.b(), n.b(), x.b(), xs.b())
+                                        )],
+                                    )],
+                                )],
+                            )],
+                        ),
+                        rclam![{a,m}, |_| VPi(
+                            box VNat,
+                            rclam![{a,m}, |n| VPi(
+                                box VVec(a.b(), n.b()),
+                                rclam![{m,n}, |xs| vapp(&vapp(&m, &n), &xs)]
+                            )]
+                        )],
+                    )],
+                )],
+            )],
+        );
+
+        let vec_elim = Ann(vec_elim_l.b(), box quote0(&vec_elim_ty));
+        println!("\n-------------------");
+        println!("vec_elim= {:?}", vec_elim);
+        println!("type(vec_elim) = {:?}", typeI0(&Context::new(), &vec_elim));
+
+        let AppendE = Lam(box Inf(box App(
+            box App(
+                box App(
+                    box App(vec_elim.b(), box bound(0)),
+                    box Lam(box Lam(box pi(
+                        box Inf(box Nat),
+                        box pi(
+                            box vec(&bound(3), &bound(0)),
+                            box vec(&bound(4), &plus(&bound(3), &bound(1))),
+                        ),
+                    ))),
+                ),
+                box Lam(box Lam(box bound(0))),
+            ),
+            box Lam(box Lam(box Lam(box Lam(box Lam(box Lam(box Inf(
+                box Cons(
+                    box bound(6),
+                    box plus(&bound(5), &bound(1)),
+                    box bound(4),
+                    box Inf(box App(box App(box Bound(2), box bound(1)), box bound(0))),
+                ),
+            ))))))),
+        )));
+
+        let vplus = evalI(&cplus, &Env::new());
+        let AppendTy = VPi(
+            box VStar,
+            rclam![{ vplus }, |a| VPi(
+                box VNat,
+                rclam![{vplus,a}, |m| VPi(
+                    box VVec(a.b(), m.b()),
+                    rclam![{vplus,a,m}, |_| VPi(
+                        VNat.b(),
+                        rclam![{vplus,a,m}, |n| VPi(
+                            box VVec(a.b(), n.b()),
+                            rclam![{vplus,a,m,n}, |_| VVec(a.b(), box vapp(&vapp(&vplus, &m), &n))]
+                        )],
+                    )],
+                )],
+            )],
+        );
+        println!("\n-------------------");
+        println!("AppenTy={:?}", quote0(&AppendTy));
+        let VVecElim = evalI(&vec_elim, &Env::new());
+        let append = Ann(AppendE.b(), box quote0(&AppendTy));
+        println!("type(append)= {:?}", typeI0(&Context::new(), &append));
+
+        let VAppend = VLam(rclam![{ vplus }, |a| vapply(
+            &VVecElim,
+            &vec![
+                a.dup(),
+                VLam(rclam![{vplus,a}, |m| VLam(rclam![{vplus,a,m}, |_| VPi(
+                    box VNat,
+                    rclam![{vplus,a,m}, |n| VPi(
+                        box VVec(a.b(), n.b()),
+                        rclam![{vplus,a,m,n}, |_| VVec(
+                            a.b(),
+                            box vapply(&vplus, &vec![m.dup(), n.dup()])
+                        )]
+                    )],
+                )])]),
+                VLam(rclam![{}, |_| VLam(rclam![{}, |v| v.dup()])]),
+                VLam(
+                    rclam![{vplus,a}, |m| VLam(rclam![{vplus,a,m}, |v| VLam(rclam![
+                        {vplus,a,m,v},
+                        |_vs| VLam(rclam![{vplus,a,m,v}, |rec| VLam(rclam![{vplus,a,m,v,rec}, |n| VLam(rclam![
+                            {vplus,a,m,n,v,rec},
+                            |w| VCons(
+                                a.b(),
+                                box vapply(&vplus, &vec![m.dup(), n.dup()]),
+                                v.b(),
+                                box vapply(&rec, &vec![n.dup(), w.dup()])
+                            )
+                        ])])])
+                    ])])]
+                ),
+            ],
+        )]);
+        let AppendC = quote0(&VAppend);
+        println!("AppendC={:?}", AppendC);
+
+        let Append = Ann(AppendC.b(), box quote0(&AppendTy));
+        let _Append = Ann(
+            box Lam(box Lam(box Lam(box Inf(box VecElim(
+                box bound(2),
+                box Lam(box Lam(box pi(
+                    box Inf(box Nat),
+                    box pi(
+                        box vec(&bound(5), &bound(0)),
+                        box vec(&bound(6), &plus(&bound(3), &bound(1))),
+                    ),
+                ))),
+                box Lam(box Lam(box bound(0))),
+                box Lam(box Lam(box Lam(box Lam(box Lam(box Lam(box Inf(
+                    box Cons(
+                        box bound(8),
+                        box plus(&bound(5), &bound(1)),
+                        box bound(4),
+                        box Inf(box App(box App(box Bound(2), box bound(1)), box bound(0))),
+                    ),
+                ))))))),
+                box bound(1),
+                box bound(0),
+            ))))),
+            box pi(
+                box Inf(box Star),
+                box pi(
+                    box Inf(box Nat),
+                    box pi(
+                        box Inf(box Vec(box bound(1), box bound(0))),
+                        box pi(
+                            box Inf(box Nat),
+                            box pi(
+                                box Inf(box Vec(box bound(3), box bound(0))),
+                                box Inf(box Vec(box bound(4), box plus(&bound(3), &bound(1)))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        );
+
+        println!("\n-------------------");
+        println!("Append={:?}", Append);
+        println!("type(Append)= {:?}", typeI0(&Context::new(), &Append));
+        println!("_Append={:?}", _Append);
+        println!("type(_Append)= {:?}", typeI0(&Context::new(), &_Append));
+        assert_eq!(
+            quote0(&typeI0(&Context::new(), &Append).unwrap()),
+            quote0(&typeI0(&Context::new(), &_Append).unwrap())
+        );
+        assert_ne!(Append, _Append);
+
+        let env42 = Context::from(vec![
+            (Global("a".to_string()), VStar),
+            (
+                Global("x".to_string()),
+                VNeutral(box NFree(box Global("a".to_string()))),
+            ),
+            (
+                Global("y".to_string()),
+                VNeutral(box NFree(box Global("a".to_string()))),
+            ),
+        ]);
+        let e42_v2 = Inf(box Cons(
+            box free("a"),
+            box int2nat(1),
+            box free("x"),
+            box Inf(box Cons(
+                box free("a"),
+                box int2nat(0),
+                box free("x"),
+                box Inf(box Nil(box free("a"))),
+            )),
+        ));
+        let e42_v1 = Inf(box Cons(
+            box free("a"),
+            box int2nat(0),
+            box free("y"),
+            box Inf(box Nil(box free("a"))),
+        ));
+        let e42_v3 = App(
+            box App(
+                box App(
+                    box App(box App(Append.b(), box free("a")), box int2nat(2)),
+                    e42_v2.b(),
+                ),
+                box int2nat(1),
+            ),
+            e42_v1.b(),
+        );
+
+        println!("\n-------------------");
+        println!("e42_v3= {:?}", e42_v3);
+        println!("type(ev42_v3)= {:?}", typeI0(&env42, &e42_v3));
+        println!("eval(ev42_v3)= {:?}", evalI(&e42_v3, &Env::new()));
+
+        /*
+
+        env42: Context
+        env42 = {
+            Global("a"): VStar(),
+            Global("x"): VNeutral(NFree(Global("a"))),
+            Global("y"): VNeutral(NFree(Global("a"))),
+        }
+        e42_v2 = Inf(
+            Cons(
+                free("a"),
+                int2nat(1),
+                free("x"),
+                Inf(Cons(free("a"), int2nat(0), free("x"), Inf(Nil(free("a"))))),
+            )
+        )
+        e42_v1 = Inf(Cons(free("a"), int2nat(0), free("y"), Inf(Nil(free("a")))))
+        e42_v3 = App(
+            App(App(App(App(Append, free("a")), int2nat(2)), e42_v2), int2nat(1)), e42_v1
+        )
+
+        print("e42_v3=", e42_v3)
+        print("type(ev42_v3)=", typeI0(env42, e42_v3))
+        print("eval(ev42_v3)=", evalI(e42_v3, []))
+                 */
     }
 
     {
         //        use std::rc::Rc;
-        fn closure_user(closure: Box<dyn Fn(usize) -> bool>) -> bool {
+        fn closure_user(closure: impl Fn(usize) -> bool) -> bool {
             closure(3)
         }
 
@@ -364,10 +652,10 @@ fn main() {
         closure_user({
             clone_all!(big_data);
             //            let big_data = big_data.clone();
-            Box::new(move |x| {
+            move |x| {
                 println!("big_data= {:?}  x={}", big_data, x);
                 false
-            })
+            }
         });
         println!("big_data= {:?}", big_data);
     }

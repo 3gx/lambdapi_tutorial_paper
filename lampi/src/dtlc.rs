@@ -480,7 +480,14 @@ fn quote(i: Int, v: &Value) -> TermC {
         VNat => Inf(box Nat),
         VZero => Inf(box Zero),
         VSucc(v) => Inf(box Succ(box quote(i, v))),
-        _ => panic!("unhadled match {:?}", v),
+        VNil(a) => Inf(box Nil(quote(i, a).b())),
+        VVec(a, n) => Inf(box Vec(box quote(i, a), box quote(i, n))),
+        VCons(a, n, x, xs) => Inf(box Cons(
+            box quote(i, a),
+            box quote(i, n),
+            box quote(i, x),
+            box quote(i, xs),
+        )),
     }
 }
 
