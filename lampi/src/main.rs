@@ -615,31 +615,16 @@ fn main() {
         println!("type(ev42_v3)= {:?}", typeI0(&env42, &e42_v3));
         println!("eval(ev42_v3)= {:?}", evalI(&e42_v3, &Env::new()));
 
-        /*
+        // https://rust-lang-nursery.github.io/rust-cookbook/datetime/duration.html
+        use std::time::Instant;
 
-        env42: Context
-        env42 = {
-            Global("a"): VStar(),
-            Global("x"): VNeutral(NFree(Global("a"))),
-            Global("y"): VNeutral(NFree(Global("a"))),
+        let start = Instant::now();
+        for _ in &[0..1000] {
+            evalI(&e42_v3, &Env::new());
         }
-        e42_v2 = Inf(
-            Cons(
-                free("a"),
-                int2nat(1),
-                free("x"),
-                Inf(Cons(free("a"), int2nat(0), free("x"), Inf(Nil(free("a"))))),
-            )
-        )
-        e42_v1 = Inf(Cons(free("a"), int2nat(0), free("y"), Inf(Nil(free("a")))))
-        e42_v3 = App(
-            App(App(App(App(Append, free("a")), int2nat(2)), e42_v2), int2nat(1)), e42_v1
-        )
+        let duration = start.elapsed();
 
-        print("e42_v3=", e42_v3)
-        print("type(ev42_v3)=", typeI0(env42, e42_v3))
-        print("eval(ev42_v3)=", evalI(e42_v3, []))
-                 */
+        println!("Time elapsed in evalI(42_v3,[]) is: {:?}", duration);
     }
 
     {
