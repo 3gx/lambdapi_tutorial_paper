@@ -182,6 +182,23 @@ fn main() {
             ),
         );
         println!("e35= {:?}", e35);
+
+        let env35 = Context::from(vec![
+            (Global("Bool".to_string()), VStar),
+            (
+                Global("False".to_string()),
+                VNeutral(box NFree(box Global("Bool".to_string()))),
+            ),
+        ]);
+        println!("type(e35)= {:?}", typeI0(&env35, &e35));
+
+        let apply35a = App(e35.b(), box free("Bool"));
+        println!("apply35a= {:?}", apply35a);
+        println!("type(apply35a)= {:?}", typeI0(&env35, &apply35a));
+
+        let apply35b = App(apply35a.b(), box free("False"));
+        println!("apply35b= {:?}", apply35b);
+        println!("type(apply35b)= {:?}", typeI0(&env35, &apply35b));
         /*
          */
     }
