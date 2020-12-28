@@ -102,11 +102,11 @@ fn main() {
         let global = |x: &str| Global(x.to_string());
         let hastype = |t: Type| HasType(box t);
         let haskind = |k: Kind| HasKind(box k);
-        let env1 = Ctx::from(vec![
+        let env1 = vec![
             (global("y"), hastype(*tfree("a"))),
             (global("a"), haskind(Star)),
-        ]);
-        let env2 = Ctx::from([&[(global("b"), haskind(Star))], &env1[..]].concat());
+        ];
+        let env2 = [&[(global("b"), haskind(Star))], &env1[..]].concat();
 
         let t0 = evalI(&term1, &Env::new());
         println!("t0= {:?}", t0);
@@ -158,14 +158,14 @@ fn main() {
             ),
             box free("y"),
         );
-        let env1 = Context::from(vec![
+        let env1 = vec![
             (
                 Global("y".to_string()),
                 VNeutral(box NFree(box Global("a".to_string()))),
             ),
             (Global("a".to_string()), VStar),
-        ]);
-        let env2 = Context::from([&[(Global("b".to_string()), VStar)], &env1[..]].concat());
+        ];
+        let env2 = [&[(Global("b".to_string()), VStar)], &env1[..]].concat();
         println!("\n-------------------");
         println!("eval(term1)= {:?}", evalI(&term1, &Env::new()));
         println!("qeval(term1)= {:?}", quote0(&evalI(&term1, &Env::new())));
@@ -192,13 +192,13 @@ fn main() {
             };
         }
 
-        let env35 = Context::from(vec![
+        let env35 = vec![
             (Global("Bool".to_string()), VStar),
             (
                 Global("False".to_string()),
                 VNeutral(bx![NFree(bx![Global("Bool".to_string())])]),
             ),
-        ]);
+        ];
         println!("type(e35)= {:?}", typeI0(&env35, &e35));
 
         let apply35a = App(e35.b(), box free("Bool"));
@@ -279,7 +279,7 @@ fn main() {
         );
         println!("vplus={:?}", vplus);
 
-        let plus2env = Context::from(vec![(Global("VnatElim".to_string()), nat_elim_ty.dup())]);
+        let plus2env = vec![(Global("VnatElim".to_string()), nat_elim_ty.dup())];
         println!("plus2env= {:?}", plus2env);
         /*
         if let Lam(box Inf(box App(plus2, _))) = quote0(&vplus) {
@@ -573,7 +573,7 @@ fn main() {
         );
         assert_ne!(Append, _Append);
 
-        let env42 = Context::from(vec![
+        let env42 = vec![
             (Global("a".to_string()), VStar),
             (
                 Global("x".to_string()),
@@ -583,7 +583,7 @@ fn main() {
                 Global("y".to_string()),
                 VNeutral(box NFree(box Global("a".to_string()))),
             ),
-        ]);
+        ];
         let e42_v2 = Inf(box Cons(
             box free("a"),
             box int2nat(1),
