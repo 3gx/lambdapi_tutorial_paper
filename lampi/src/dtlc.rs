@@ -283,7 +283,7 @@ fn evalC(trm: &TermC, env: &Env) -> Value {
     }
 }
 
-fn vapp(val: &Value, v: &Value) -> Value {
+pub fn vapp(val: &Value, v: &Value) -> Value {
     use {Neutral::*, Value::*};
     match val {
         VLam(f) => f(v),

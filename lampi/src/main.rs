@@ -183,11 +183,17 @@ fn main() {
         );
         println!("e35= {:?}", e35);
 
+        macro_rules! bx {
+            ($e:expr) => {
+                $e.b()
+            };
+        }
+
         let env35 = Context::from(vec![
             (Global("Bool".to_string()), VStar),
             (
                 Global("False".to_string()),
-                VNeutral(box NFree(box Global("Bool".to_string()))),
+                VNeutral(bx![NFree(bx![Global("Bool".to_string())])]),
             ),
         ]);
         println!("type(e35)= {:?}", typeI0(&env35, &e35));
@@ -199,8 +205,104 @@ fn main() {
         let apply35b = App(apply35a.b(), box free("False"));
         println!("apply35b= {:?}", apply35b);
         println!("type(apply35b)= {:?}", typeI0(&env35, &apply35b));
+
+        // > let plus = natElim (\_ -> Nat -> Nat)
+        //                      (\n -> n)
+        //                      (\k rec n -> Succ (rec n))
+        // plus :: Pi (x :: Nat) (y :: Nat) . Nat
+        let _plusl = |x: TermC| {
+            NatElim(
+                box Lam(box pi(box Inf(box Nat), box Inf(box Nat))),
+                box Lam(box Inf(box Bound(0))),
+                box Lam(box Lam(box Lam(box Inf(box Succ(box Inf(box App(
+                    box Bound(1),
+                    box Inf(box Bound(0)),
+                ))))))),
+                x.b(),
+            )
+        };
+
+        let nat_elim_l = Lam(box Lam(box Lam(box Lam(box Inf(box NatElim(
+            box Inf(box Bound(3)),
+            box Inf(box Bound(2)),
+            box Inf(box Bound(1)),
+            box Inf(box Bound(0)),
+        ))))));
+
+        let nat_elim_ty = VPi(
+            box VPi(box VNat, rclam![{}, |_| VStar]),
+            rclam![{}, |m| VPi(
+                box vapp(&m, &VZero),
+                rclam![{m}, |_| VPi(
+                    box VPi(
+                        box VNat,
+                        rclam![{m}, |k| VPi(
+                            box vapp(&m, &k),
+                            rclam![{m,k}, |_| vapp(&m, &VSucc(k.b()))]
+                        )]
+                    ),
+                    rclam![{m}, |_| VPi(box VNat, rclam![{m}, |n| vapp(&m, &n)])],
+                )],
+            )],
+        );
+        let nat_elim = Ann(nat_elim_l.b(), quote0(&nat_elim_ty).b());
+        println!("nat_elim= {:?}", nat_elim);
+        println!("type(nat_elim)= {:?}", typeI0(&Context::new(), &nat_elim));
+
         /*
-         */
+        ## > let plus = natElim (\_ -> Nat -> Nat)
+        ##                      (\n -> n)
+        ##                      (\k rec n -> Succ (rec n))
+        ## plus :: Pi (x :: Nat) (y :: Nat) . Nat
+
+        plusl: TLam[[TermC], TermI] = lambda x: NatElim(
+            Lam(pi(Inf(Nat()), Inf(Nat()))),
+            Lam(Inf(Bound(0))),
+            Lam(Lam(Lam(Inf(Succ(Inf(App(Bound(1), Inf(Bound(0))))))))),
+            x,
+        )
+
+        natElimL = Lam(
+            Lam(
+                Lam(
+                    Lam(
+                        Inf(NatElim(Inf(Bound(3)), Inf(Bound(2)), Inf(Bound(1)), Inf(Bound(0))))
+                    )
+                )
+            )
+        )
+        natElimTy = VPi(
+            VPi(VNat(), lambda _: VStar()),
+            lambda m: VPi(
+                vapp(m, VZero()),
+                lambda _: VPi(
+                    VPi(VNat(), lambda k: VPi(vapp(m, k), lambda _: vapp(m, VSucc(k)))),
+                    lambda _: VPi(VNat(), lambda n: vapp(m, n)),
+                ),
+            ),
+        )
+
+        natElim = Ann(natElimL, quote0(natElimTy))
+        print("natElim=", natElim)
+        print("type(natElim)=", typeI0({}, natElim))
+        Plus = App(
+            App(App(natElim, Lam(pi(Inf(Nat()), Inf(Nat())))), Lam(Inf(Bound(0)))),
+            Lam(Lam(Lam(Inf(Succ(Inf(App(Bound(1), Inf(Bound(0))))))))),
+        )
+        VnatElim = evalI(natElim, [])
+        vplus = vapply(VnatElim, [\
+                VLam(lambda _: VPi(VNat(), lambda _ : VNat())),
+                VLam(lambda n : n),
+                VLam(lambda p: VLam(lambda rec: VLam(lambda n : VSucc(vapp(rec, n)))))])
+        print("vplus=", vplus)
+        #Plus2 : TermI
+        #plus2env : Context
+        #plus2env = {Global("VnatElim"): natElimTy}
+        #Plus2, _ = (quote0(vplus) >> Inf).e >> App
+        #print("plus2env=", plus2env)
+        #print("Plus2=",Plus2)
+        #print("type(Plus2)=", typeI0(plus2env, Plus2))
+                 */
     }
 
     {
