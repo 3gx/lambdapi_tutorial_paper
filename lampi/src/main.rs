@@ -210,7 +210,7 @@ fn main() {
         //                      (\n -> n)
         //                      (\k rec n -> Succ (rec n))
         // plus :: Pi (x :: Nat) (y :: Nat) . Nat
-        let _plusl = |x: TermC| {
+        let plusl = |x: &TermC| {
             NatElim(
                 box Lam(box pi(box Inf(box Nat), box Inf(box Nat))),
                 box Lam(box Inf(box Bound(0))),
@@ -300,8 +300,45 @@ fn main() {
             box pi(box Inf(box Nat), box pi(box Inf(box Nat), box Inf(box Nat))),
         );
         println!("type(Plus)= {:?}", typeI0(&Context::new(), &plus));
-        /*
-         */
+
+        fn int2nat(n: Int) -> TermC {
+            if n == 0 {
+                Inf(box Zero)
+            } else {
+                Inf(box Succ(box int2nat(n - 1)))
+            }
+        }
+
+        fn nval2int(v: &Value) -> Int {
+            match v {
+                VZero => 0,
+                VSucc(k) => 1 + nval2int(k),
+                _ => panic!("unhandled {:?}", v),
+            }
+        }
+        // > plus 40 2
+        //# 42 :: Nat
+        let n40 = int2nat(40);
+        println!("n40= {:?}", n40);
+        let n2 = int2nat(2);
+        println!("n2= {:?}", n2);
+        if let Inf(ti) = &n40 {
+            println!("type(n40)= {:?}", typeI0(&Context::new(), &ti));
+        } else {
+            panic!("unsupported {:?}", n40);
+        }
+        println!(
+            "type(plusl(n40))= {:?}",
+            typeI0(&Context::new(), &plusl(&n40))
+        );
+        let n42term = App(box plusl(&n40), n2.b());
+        println!("type(n42term)= {:?}", typeI0(&Context::new(), &n42term));
+        let n42v = evalI(&n42term, &Env::new());
+        println!("n42v= {:?}", n42v);
+        let n42 = nval2int(&n42v);
+        println!("n42= {:?}", n42);
+        // > n42
+        // 42
     }
 
     {

@@ -39,7 +39,7 @@ macro_rules! closure1 {
 }
 */
 
-type Int = i32;
+pub type Int = i32;
 
 pub trait Dup: Sized + Clone {
     fn b(self: &Self) -> Box<Self> {
