@@ -619,7 +619,7 @@ fn main() {
         use std::time::Instant;
 
         let start = Instant::now();
-        for _ in &[0..1000] {
+        for _ in &[..1000] {
             evalI(&e42_v3, &Env::new());
         }
         let duration = start.elapsed();
