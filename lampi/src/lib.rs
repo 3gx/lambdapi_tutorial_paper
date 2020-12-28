@@ -62,6 +62,20 @@ macro_rules! rclam {
 }
 
 #[macro_export]
+macro_rules! lam {
+    ({$($vars:tt),*}  $lam:expr) => {
+        { $(let $vars = $vars.clone();)*
+          Rc::new($lam)
+        }
+    };
+    ($lam:expr) => {
+        {
+          Rc::new($lam)
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! rc_closure {
     ({}, |$var:tt| $body:expr) => {
         Rc::new(move |$var| $body)

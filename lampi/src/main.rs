@@ -126,15 +126,15 @@ fn main() {
         println!("");
         println!("-=- DTLC -=-");
         use lampi::dtlc::*;
-        use lampi::rclam;
+        use lampi::lam;
         use {Name::*, Neutral::*, TermC::*, TermI::*, Value::*};
 
-        let v0 = VLam(rclam![{}, |x| VLam(rclam![{ x }, |_| x.dup()])]);
+        let v0 = VLam(lam![|x| VLam(lam![{x} move |_| x.dup()])]);
         println!("v0={:?}", v0);
         let e0 = quote0(&v0);
         println!("e0={:?}", e0);
 
-        let c = rclam!({}, |x, y| x + y);
+        let c = lam!(|x, y| x + y);
         println!("{}", c(2, 3));
 
         let id_ = || Lam(box Inf(box Bound(0)));
@@ -233,18 +233,18 @@ fn main() {
         ))))));
 
         let nat_elim_ty = VPi(
-            box VPi(box VNat, rclam![{}, |_| VStar]),
-            rclam![{}, |m| VPi(
+            box VPi(box VNat, lam![|_| VStar]),
+            lam![|m| VPi(
                 box vapp(&m, &VZero),
-                rclam![{ m }, |_| VPi(
+                lam![{m} move |_| VPi(
                     box VPi(
                         box VNat,
-                        rclam![{ m }, |k| VPi(
+                        lam![{m} move |k| VPi(
                             box vapp(&m, &k),
-                            rclam![{m,k}, |_| vapp(&m, &VSucc(k.b()))]
+                            lam![{m,k} move |_| vapp(&m, &VSucc(k.b()))]
                         )]
                     ),
-                    rclam![{ m }, |_| VPi(box VNat, rclam![{ m }, |n| vapp(&m, &n)])],
+                    lam![{m} move |_| VPi(box VNat, lam![{m} move |n| vapp(&m, &n)])],
                 )],
             )],
         );
@@ -270,11 +270,10 @@ fn main() {
         let vplus = vapply(
             &vnat_elim,
             &vec![
-                VLam(rclam![{}, |_| VPi(box VNat, rclam![{}, |_| VNat])]),
-                VLam(rclam![{}, move |n| n.dup()]),
-                VLam(rclam![{}, |_| VLam(rclam![{}, |rec| VLam(rclam![
-                    { rec },
-                    |n| VSucc(box vapp(&rec, &n))
+                VLam(lam![|_| VPi(box VNat, lam![|_| VNat])]),
+                VLam(lam![|n| n.dup()]),
+                VLam(lam![|_| VLam(lam![|rec| VLam(lam![
+                    {rec} move |n| VSucc(box vapp(&rec, &n))
                 ])])]),
             ],
         );
@@ -394,26 +393,26 @@ fn main() {
 
         let vec_elim_ty = VPi(
             box VStar,
-            rclam![{}, |a| VPi(
+            lam![|a| VPi(
                 box VPi(
                     box VNat,
-                    rclam![{ a }, |n| VPi(
+                    lam![{a} move |n| VPi(
                         box VVec(a.b(), n.b()),
-                        rclam![{}, |_| VStar]
+                        lam![|_| VStar]
                     )]
                 ),
-                rclam![{ a }, |m| VPi(
+                lam![{a} move |m| VPi(
                     box vapp(&vapp(&m, &VZero), &VNil(a.b())),
-                    rclam![{m,a}, |_| VPi(
+                    lam![{m,a} move |_| VPi(
                         box VPi(
                             box VNat,
-                            rclam![{m,a}, |n| VPi(
+                            lam![{m,a} move |n| VPi(
                                 a.b(),
-                                rclam![{m,n,a}, |x| VPi(
+                                lam![{m,n,a} move |x| VPi(
                                     box VVec(a.b(), n.b()),
-                                    rclam![{m,n,a,x}, |xs| VPi(
+                                    lam![{m,n,a,x} move |xs| VPi(
                                         box vapp(&vapp(&m, &n), &xs),
-                                        rclam![{m,n,a,x,xs}, |_| vapp(
+                                        lam![{m,n,a,x,xs} move |_| vapp(
                                             &vapp(&m, &VSucc(n.b())),
                                             &VCons(a.b(), n.b(), x.b(), xs.b())
                                         )],
@@ -421,11 +420,11 @@ fn main() {
                                 )],
                             )],
                         ),
-                        rclam![{a,m}, |_| VPi(
+                        lam![{a,m} move |_| VPi(
                             box VNat,
-                            rclam![{a,m}, |n| VPi(
+                            lam![{a,m} move |n| VPi(
                                 box VVec(a.b(), n.b()),
-                                rclam![{m,n}, |xs| vapp(&vapp(&m, &n), &xs)]
+                                lam![{m,n} move |xs| vapp(&vapp(&m, &n), &xs)]
                             )]
                         )],
                     )],
@@ -465,15 +464,16 @@ fn main() {
         let vplus = evalI(&cplus, &Env::new());
         let AppendTy = VPi(
             box VStar,
-            rclam![{ vplus }, |a| VPi(
+            lam![{vplus} move |a| VPi(
                 box VNat,
-                rclam![{vplus,a}, |m| VPi(
+                lam![{vplus,a} move |m| VPi(
                     box VVec(a.b(), m.b()),
-                    rclam![{vplus,a,m}, |_| VPi(
+                    lam![{vplus,a,m} move |_| VPi(
                         VNat.b(),
-                        rclam![{vplus,a,m}, |n| VPi(
+                        lam![{vplus,a,m} move |n| VPi(
                             box VVec(a.b(), n.b()),
-                            rclam![{vplus,a,m,n}, |_| VVec(a.b(), box vapp(&vapp(&vplus, &m), &n))]
+                            lam![{vplus,a,m,n} move
+                            |_| VVec(a.b(), box vapp(&vapp(&vplus, &m), &n))]
                         )],
                     )],
                 )],
@@ -485,27 +485,29 @@ fn main() {
         let append = Ann(AppendE.b(), box quote0(&AppendTy));
         println!("type(append)= {:?}", typeI0(&Context::new(), &append));
 
-        let VAppend = VLam(rclam![{ vplus }, |a| vapply(
+        let VAppend = VLam(lam![{vplus} move |a| vapply(
             &VVecElim,
             &vec![
                 a.dup(),
-                VLam(rclam![{vplus,a}, |m| VLam(rclam![{vplus,a,m}, |_| VPi(
+                VLam(lam![{vplus,a} move |m| VLam(lam![{vplus,a,m} move |_| VPi(
                     box VNat,
-                    rclam![{vplus,a,m}, |n| VPi(
+                    lam![{vplus,a,m} move |n| VPi(
                         box VVec(a.b(), n.b()),
-                        rclam![{vplus,a,m,n}, |_| VVec(
+                        lam![{vplus,a,m,n} move |_| VVec(
                             a.b(),
                             box vapply(&vplus, &vec![m.dup(), n.dup()])
                         )]
                     )],
                 )])]),
-                VLam(rclam![{}, |_| VLam(rclam![{}, |v| v.dup()])]),
+                VLam(lam![|_| VLam(lam![|v| v.dup()])]),
                 VLam(
-                    rclam![{vplus,a}, |m| VLam(rclam![{vplus,a,m}, |v| VLam(rclam![
-                        {vplus,a,m,v},
-                        |_vs| VLam(rclam![{vplus,a,m,v}, |rec| VLam(rclam![{vplus,a,m,v,rec}, |n| VLam(rclam![
-                            {vplus,a,m,n,v,rec},
-                            |w| VCons(
+                    lam![{vplus,a} move |m| VLam(lam![{vplus,a,m} move |v| VLam(lam![
+                        {vplus,a,m,v} move
+                        |_vs| VLam(lam![{vplus,a,m,v}
+                            move |rec| VLam(lam![{vplus,a,m,v,rec}
+                                move |n| VLam(lam![{vplus,a,m,n,v,rec}
+                                    move |w|
+                            VCons(
                                 a.b(),
                                 box vapply(&vplus, &vec![m.dup(), n.dup()]),
                                 v.b(),

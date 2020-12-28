@@ -209,7 +209,7 @@ pub fn evalI(trm: &TermI, env: &Env) -> Value {
         Star => VStar,
         Pi(t, tp) => VPi(
             box evalC(t, env),
-            rclam![{tp, env}, |x| evalC(
+            lam![{tp, env} move |x| evalC(
                 &tp,
                 &[&[x.dup()], &env[..]].concat()
             )],
@@ -392,9 +392,9 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                 m,
                 &VPi(
                     VNat.b(),
-                    rclam![{ aVal }, |k| VPi(
+                    lam![{aVal} move |k| VPi(
                         VVec(aVal.b(), k.b()).b(),
-                        rclam!({}, |_| VStar),
+                        lam!(|_| VStar),
                     )],
                 ),
             )?;
@@ -413,16 +413,16 @@ fn typeI(i: Int, ctx: &Context, trm: &TermI) -> Result<Type> {
                 mc,
                 &VPi(
                     VNat.b(),
-                    rclam![{aVal, mVal}, |l| VPi(
+                    lam![{aVal, mVal} move |l| VPi(
                         aVal.b(),
-                        rclam![{l, aVal, mVal}, |y| VPi(
+                        lam![{l, aVal, mVal} move |y| VPi(
                             VVec(aVal.b(), l.b()).b(),
-                            rclam![{l, y, aVal, mVal}, |ys| VPi(
+                            lam![{l, y, aVal, mVal} move |ys| VPi(
                                 [l.dup(), ys.dup()]
                                     .iter()
                                     .fold(mVal.dup(), |a, b| vapp(&a, &b))
                                     .b(),
-                                rclam![{l, y, ys, aVal, mVal}, |_| {
+                                lam![{l, y, ys, aVal, mVal} move |_| {
                                     [VSucc(l.b()), VCons(aVal.b(), l.b(), y.b(), ys.b())]
                                         .iter()
                                         .fold(mVal.dup(), |a, b| vapp(&a, &b))
