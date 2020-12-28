@@ -125,8 +125,8 @@ fn main() {
         println!("");
         println!("-=- DTLC -=-");
         use lampi::dtlc::*;
-        use lampi::{rclam};
-        use {Name::*, TermC::*, TermI::*, Value::*};
+        use lampi::rclam;
+        use {Name::*, Neutral::*, TermC::*, TermI::*, Value::*};
 
         let v0 = VLam(rclam![{}, |x| VLam(rclam![{ x }, |_| x.dup()])]);
         println!("v0={:?}", v0);
@@ -136,6 +136,40 @@ fn main() {
         let c = rclam!({}, |x, y| x + y);
         println!("{}", c(2, 3));
 
+        let id_ = || Lam(box Inf(box Bound(0)));
+        let const_ = || Lam(box Lam(box Inf(box Bound(1))));
+        let free = |x: &str| Inf(box Free(box Global(x.to_string())));
+        let pi = |x, y| Inf(box Pi(x, y));
+        let term1 = App(
+            box Ann(box id_(), box pi(box free("a"), box free("a"))),
+            box free("y"),
+        );
+        let term2 = App(
+            box App(
+                box Ann(
+                    box const_(),
+                    box pi(
+                        box pi(box free("b"), box free("b")),
+                        box pi(box free("a"), box pi(box free("b"), box free("b"))),
+                    ),
+                ),
+                box id_(),
+            ),
+            box free("y"),
+        );
+        let env1 = Context::from(vec![
+            (
+                Global("y".to_string()),
+                VNeutral(box NFree(box Global("a".to_string()))),
+            ),
+            (Global("a".to_string()), VStar),
+        ]);
+        let env2 = Context::from([&[(Global("b".to_string()), VStar)], &env1[..]].concat());
+        println!("eval(term1)= {:?}", evalI(&term1, &Env::new()));
+        println!("qeval(term1)= {:?}", quote0(&evalI(&term1, &Env::new())));
+        println!("qqeval(term2)= {:?}", quote0(&evalI(&term2, &Env::new())));
+        println!("type(term1)= {:?}", typeI0(&env1, &term1));
+        println!("type(term2)= {:?}", typeI0(&env2, &term2));
         /*
         id_ = Lam(Inf(Bound(0)))
         const_ = Lam(Lam(Inf(Bound(1))))
@@ -165,7 +199,7 @@ fn main() {
     }
 
     {
-        use std::rc::Rc;
+        //        use std::rc::Rc;
         fn closure_user(closure: Box<dyn Fn(usize) -> bool>) -> bool {
             closure(3)
         }

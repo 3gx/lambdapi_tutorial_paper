@@ -151,9 +151,9 @@ impl Dup for Value {}
 impl std::fmt::Debug for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::VLam(_) => write!(f, "VLam(<fun>)"),
+            Value::VLam(..) => write!(f, "{:?}", quote0(&self)),
             Value::VStar => write!(f, "VStar"),
-            Value::VPi(v, _) => write!(f, "VPi({:?},<fun>)", v),
+            Value::VPi(..) => write!(f, "{:?}", quote0(&self)),
             Value::VNeutral(n) => write!(f, "VNeutral({:?})", n),
             Value::VNat => write!(f, "VNat"),
             Value::VZero => write!(f, "VZero"),
@@ -191,8 +191,8 @@ fn vfree(n: Name) -> Value {
     Value::VNeutral(box Neutral::NFree(box n))
 }
 
-type Env = Vec<Value>;
-type Context = Vec<(Name, Type)>;
+pub type Env = Vec<Value>;
+pub type Context = Vec<(Name, Type)>;
 fn lookup<'a, 'b>(c: &'a Context, n: &'b Name) -> Option<&'a Type> {
     if let Some((_, i)) = c.iter().find(|x| x.0 == *n) {
         Some(i)

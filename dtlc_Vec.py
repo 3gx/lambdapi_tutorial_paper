@@ -255,8 +255,7 @@ class Global(ADT):
     str_: str
 
     def __repr__(self) -> str:
-        return f"'{self.str_}'"
-
+        return f"Global('{self.str_}')"
 
 @dataclass(**_dc_attrs)
 class Local(ADT):
