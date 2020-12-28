@@ -340,6 +340,18 @@ fn main() {
         println!("n42= {:?}", n42);
         // > n42
         // 42
+        let n1 = int2nat(1);
+        let n2a = App(plusl(&n1).b(), n1.b());
+
+        println!("n2a= {:?}", n2a);
+        println!("type(n2a)= {:?}", typeI0(&Context::new(), &n2a));
+        let n2e = evalI(&n2a, &Env::new());
+        println!("n2e= {:?}", n2e);
+        println!("n2e= {:?}", nval2int(&n2e));
+        let n4 = App(plusl(&Inf(n2a.b())).b(), Inf(n2a.b()).b());
+        println!("n4= {:?}", n4);
+        println!("type(n4)= {:?}", typeI0(&Context::new(), &n4));
+        println!("eval(n4)= {:?}", nval2int(&evalI(&n4, &Env::new())));
     }
 
     {
