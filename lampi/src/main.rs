@@ -287,7 +287,7 @@ fn main() {
         }
         */
 
-        let Plus1 = Ann(
+        let plus1 = Ann(
             box Lam(box Inf(box NatElim(
                 box Lam(box pi(box Inf(box Nat), box Inf(box Nat))),
                 box Lam(box Inf(box Bound(0))),
@@ -299,6 +299,7 @@ fn main() {
             ))),
             box pi(box Inf(box Nat), box pi(box Inf(box Nat), box Inf(box Nat))),
         );
+        println!("type(plus1)= {:?}", typeI0(&Context::new(), &plus1));
         println!("type(Plus)= {:?}", typeI0(&Context::new(), &plus));
 
         fn int2nat(n: Int) -> TermC {
